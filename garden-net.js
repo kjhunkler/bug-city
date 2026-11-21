@@ -8,7 +8,7 @@ export function connectGarden({ onWorld, onStatus = () => {}, baseUrl = "" }) {
   let id;
   let status;
   let frame;
-  let controls = { turn: 0, forward: 0 };
+  let controls = { turn: 0, forward: 0, targetBug: null, targetSequence: null };
   let sentControls;
   let localWorld;
   let pending = false;
@@ -86,8 +86,16 @@ export function connectGarden({ onWorld, onStatus = () => {}, baseUrl = "" }) {
   }, 1000 / 20);
 
   return {
-    input({ turn, forward }) {
-      if (turn !== controls.turn || forward !== controls.forward) controls = { turn, forward };
+    input({ turn, forward, targetBug, targetSequence }) {
+      const hasTarget = Number.isSafeInteger(targetBug) && targetBug > 0;
+      const selected = hasTarget ? targetBug : controls.targetBug;
+      const sequence = hasTarget && Number.isSafeInteger(targetSequence) && targetSequence > 0
+        ? targetSequence
+        : selected === controls.targetBug ? controls.targetSequence : null;
+      if (turn !== controls.turn || forward !== controls.forward ||
+          selected !== controls.targetBug || sequence !== controls.targetSequence) {
+        controls = { turn, forward, targetBug: selected, targetSequence: sequence };
+      }
     },
     close() {
       events.close();

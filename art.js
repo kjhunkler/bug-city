@@ -20,7 +20,7 @@ export function drawJar(ctx) {
   r(9, 9, 3, 1, "#675741");
   r(10, 11, 1, 2, "#5b513b");
 }
-export function paint(ctx, world, id, camera, time, walking) {
+export function paint(ctx, world, id, camera, time, walking, swings = {}) {
   const w = ctx.canvas.width,
     h = ctx.canvas.height;
   const r = (x, y, a, b, c) => {
@@ -38,10 +38,36 @@ export function paint(ctx, world, id, camera, time, walking) {
   function project(x, y) {
     x -= camera.x;
     y -= camera.y;
-    return [w / 2 + x * c + y * s, h / 2 - x * s + y * c];
+    const forward = x * s - y * c;
+    const perspective = 1 / Math.max(0.15, 1 + forward / (h * 0.68));
+    return [
+      w / 2 + (x * c + y * s) * perspective,
+      h * 0.55 - forward * 0.59 * perspective,
+      perspective,
+    ];
   }
-  const radius = Math.ceil(Math.hypot(w, h) / 2) + 32;
+  function atScale(x, y, scale, draw) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    ctx.translate(-x, -y);
+    draw();
+    ctx.restore();
+  }
+  const radius = Math.ceil(Math.hypot(w, h) * 1.15) + 80;
+  const horizon = Math.round(h * 0.15);
   r(0, 0, w, h, "#bed783");
+  r(0, 0, w, horizon, "#a8d9cf");
+  // Distant hills turn with the explorer while the nearer meadow passes faster.
+  for (let x = 0; x < w; x += 2) {
+    const angle = camera.angle + Math.atan((x - w / 2) / (h * 0.9));
+    const hills =
+      Math.sin(angle * 8 + (world.seed % 20)) * 3 + Math.cos(angle * 15) * 2;
+    const ridge = horizon - 5 + Math.round(hills);
+    r(x, ridge, 2, horizon - ridge + 3, "#93b99b");
+    const low = horizon - 1 + Math.round(2 * Math.sin(angle * 13));
+    r(x, low, 2, 5, "#a9c78d");
+  }
   // A pale sandy trail meanders through each band of meadow.
   for (
     let band = Math.floor((camera.x - radius - 60) / 220);
@@ -85,20 +111,34 @@ export function paint(ctx, world, id, camera, time, walking) {
       const n = hash(ix, iy, world.seed),
         wx = ix * 32 + (n % 25),
         wy = iy * 32 + ((n >>> 6) % 25);
-      const [x, y] = project(wx, wy);
+      const [x, y, scale] = project(wx, wy);
       if (x < -18 || x > w + 18 || y < -15 || y > h + 28) continue;
+      if (scale < 0.25 || scale > 3) continue;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      ctx.translate(-x, -y);
       const tint = n % 2 ? "#acc879" : "#cce28f";
       oval(x, y, 5 + (n % 8), 2, tint);
       r(x + 8, y + 5, 3, 1, "#a1bd71");
       r(x - 7, y - 5, 1, 3, "#9cba69");
       r(x - 9, y - 6, 1, 2, "#9cba69");
-      if (n % 13 === 0) objects.push({ y, draw: () => tree(x, y, n) });
-      else if (n % 5 === 0) objects.push({ y, draw: () => flowers(x, y, n) });
+      if (n % 13 === 0)
+        objects.push({
+          y,
+          draw: () => atScale(x, y, scale, () => tree(x, y, n)),
+        });
+      else if (n % 5 === 0)
+        objects.push({
+          y,
+          draw: () => atScale(x, y, scale, () => flowers(x, y, n)),
+        });
       else if (n % 11 === 0) {
         oval(x, y, 6, 3, "#91ad71");
         oval(x, y - 2, 5, 3, "#a9b69b");
         r(x - 3, y - 4, 4, 1, "#d8d9b2");
       }
+      ctx.restore();
     }
   }
   function tree(x, y, n) {
@@ -151,7 +191,7 @@ export function paint(ctx, world, id, camera, time, walking) {
       r(x - 2, y - 4, 4, 2, "#494538");
     }
   }
-  function explorer(x, y, color, bounce, heading) {
+  function explorer(x, y, color, bounce, heading, swinging) {
     oval(x, y + 2, 8, 2, "#92ae6b");
     y -= bounce;
     r(x - 5, y - 2, 4, 4, "#614e3c");
@@ -175,34 +215,79 @@ export function paint(ctx, world, id, camera, time, walking) {
       r(x - 3, y - 7, 7, 5, color);
       r(x - 4, y - 8, 2, 5, "#f0ce89");
     }
+    if (swinging) return;
     r(x + 7, y - 11, 1, 7, "#846849");
     oval(x + 9, y - 14, 3, 3, "#849981");
     oval(x + 9, y - 14, 2, 2, "#e5ecc5");
   }
+  const targets = [];
   for (const b of world.bugs) {
-    const [x, y] = project(b.x, b.y);
-    if (x >= -8 && x <= w + 8 && y >= -8 && y <= h + 8)
-      objects.push({ y, draw: () => bug(x, y, b) });
+    const [x, y, scale] = project(b.x, b.y);
+    if (scale > 3 || x < -8 || x > w + 8 || y < 0 || y > h + 8) continue;
+    const size = Math.max(0.65, scale);
+    targets.push({
+      id: b.id,
+      x,
+      y: y - (b.kind === "ladybug" ? 1 : 3) * size,
+      size,
+      bug: b,
+    });
+    objects.push({ y, draw: () => atScale(x, y, size, () => bug(x, y, b)) });
   }
   for (const [key, p] of Object.entries(world.players)) {
-    const local = key === id,
-      [x, y] = local ? [w / 2, h / 2 + 7] : project(p.x, p.y);
+    const local = key === id;
+    const [x, y, scale] = local ? [w / 2, h * 0.55, 1] : project(p.x, p.y);
+    if (scale > 3) continue;
+    const swing = swings[key];
+    const progress = swing ? (time - swing.start) / 0.37 : 1;
+    const active = progress >= 0 && progress < 1;
     objects.push({
       y,
       draw: () =>
-        explorer(
-          x,
-          y,
-          local
-            ? "#d47751"
-            : ["#779baa", "#a384ab", "#7b9e62"][
-                hash(key.length, key.charCodeAt(0), 0) % 3
-              ],
-          local && walking ? Math.floor(time * 6) % 2 : 0,
-          p.angle - camera.angle,
+        atScale(x, y, scale, () =>
+          explorer(
+            x,
+            y,
+            local
+              ? "#d47751"
+              : ["#779baa", "#a384ab", "#7b9e62"][
+                  hash(key.length, key.charCodeAt(0), 0) % 3
+                ],
+            local && walking ? Math.floor(time * 6) % 2 : 0,
+            p.angle - camera.angle,
+            active,
+          ),
         ),
     });
+    if (active) {
+      const [tx, ty] = project(swing.x, swing.y);
+      objects.push({
+        y: Infinity,
+        draw: () => {
+          const handX = x + 6 * scale,
+            handY = y - 8 * scale;
+          const reach = Math.sin(Math.PI * progress);
+          const nx =
+            handX + (tx - handX) * reach + Math.sin(2 * Math.PI * progress) * 7;
+          const ny =
+            handY + (ty - handY) * reach - 5 * Math.sin(2 * Math.PI * progress);
+          ctx.strokeStyle = "#947048";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(handX, handY);
+          ctx.lineTo(nx, ny);
+          ctx.stroke();
+          oval(nx, ny, 6, 5, "#657f74");
+          oval(nx, ny, 5, 4, "#e7f2cc");
+          for (let j = -2; j <= 2; j += 2) {
+            r(nx + j - 1, ny + j, 1, 2, "#9db6a4");
+            r(nx + j + 1, ny - j, 1, 2, "#9db6a4");
+          }
+        },
+      });
+    }
   }
   objects.sort((a, b) => a.y - b.y);
   for (const obj of objects) obj.draw();
+  return targets;
 }

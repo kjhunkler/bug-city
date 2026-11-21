@@ -1,6 +1,6 @@
 import { addPlayer, createWorld, removePlayer, stepWorld } from "./meadow.js";
 
-const PROTOCOL = "bug-city-meadow-v1";
+const PROTOCOL = "bug-city-meadow-v2";
 const FRAME_MS = 50;
 const HANDSHAKE_MS = 7000;
 const SILENCE_MS = 8000;
@@ -10,7 +10,7 @@ const MAX_PLAYERS = 12;
 const MAX_BUGS = 1024;
 const MAX_MESSAGE = 128 * 1024;
 const MAX_BUFFERED = 64 * 1024;
-const ZERO_INPUT = { turn: 0, forward: 0 };
+const ZERO_INPUT = { turn: 0, forward: 0, targetBug: null, targetSequence: null };
 const PLAYER_ID = /^[a-f0-9]{32}$/;
 
 function hashScope(scope) {
@@ -30,6 +30,20 @@ function playerId() {
 
 function boundedAxis(value) {
   return Number.isFinite(value) ? Math.max(-1, Math.min(1, value)) : 0;
+}
+
+function updateInput(previous, next) {
+  const hasTarget = Number.isSafeInteger(next?.targetBug) && next.targetBug > 0;
+  const targetBug = hasTarget ? next.targetBug : previous.targetBug;
+  const targetSequence = hasTarget && Number.isSafeInteger(next.targetSequence) && next.targetSequence > 0
+    ? next.targetSequence
+    : targetBug === previous.targetBug ? previous.targetSequence : null;
+  return {
+    turn: boundedAxis(next?.turn),
+    forward: boundedAxis(next?.forward),
+    targetBug,
+    targetSequence,
+  };
 }
 
 function boundedCoordinate(value) {
@@ -224,10 +238,7 @@ export function connectPages({
         guests.get(id)?.conn === conn
       ) {
         const guest = guests.get(id);
-        guest.input = {
-          turn: boundedAxis(message.turn),
-          forward: boundedAxis(message.forward),
-        };
+        guest.input = updateInput(guest.input, message);
         guest.lastInput = performance.now();
       }
     });
@@ -380,10 +391,7 @@ export function connectPages({
   const timer = setInterval(tick, FRAME_MS);
   return {
     input(next) {
-      input = {
-        turn: boundedAxis(next?.turn),
-        forward: boundedAxis(next?.forward),
-      };
+      input = updateInput(input, next);
     },
     close() {
       closed = true;

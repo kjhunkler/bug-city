@@ -87,15 +87,25 @@ test("players join one garden and the oldest guest continues its simulation", { 
 
   const third = await relay.join(THIRD);
   const hostFrame = await host.next((frame) => frame.world?.players[THIRD]);
-  const controls = { turn: 1, forward: 0.5 };
-  assert.equal((await relay.post("input", GUEST, controls)).status, 204);
-  assert.deepEqual(await host.next((frame) => frame.id === GUEST), { id: GUEST, input: controls });
-
   const world = hostFrame.world;
   const bug = world.bugs[0];
-  Object.assign(world.players[HOST], { x: bug.x, y: bug.y });
+  Object.assign(world.players[GUEST], { x: bug.x, y: bug.y });
+  const movement = { turn: 1, forward: 0.5 };
+  assert.equal((await relay.post("input", GUEST, movement)).status, 204);
+  const initialInput = await host.next((frame) => frame.id === GUEST);
+  stepWorld(world, 1 / 20, { [GUEST]: initialInput.input });
+  assert.equal(world.caught, 0);
+
+  const tap = { ...movement, targetBug: bug.id, targetSequence: 2 };
+  assert.equal((await relay.post("input", GUEST, tap)).status, 204);
+  assert.deepEqual(await host.next((frame) => frame.id === GUEST), { id: GUEST, input: tap });
+  assert.equal((await relay.post("input", GUEST, movement)).status, 204);
+  const { input: controls } = await host.next((frame) => frame.id === GUEST);
+  assert.deepEqual(controls, tap);
   stepWorld(world, 1 / 20, { [GUEST]: controls });
-  assert.ok(world.caught > 0);
+  assert.equal(world.caught, 1);
+  assert.equal(world.players[GUEST].swing, 1);
+  assert.ok(!world.bugs.some((candidate) => candidate.id === bug.id));
   const submitted = { world, epoch: hostFrame.epoch, revision: hostFrame.revision };
   assert.equal((await relay.post("world", GUEST, submitted)).status, 409);
   assert.equal((await relay.post("world", HOST, submitted, HOST)).status, 401);

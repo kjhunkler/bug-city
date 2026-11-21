@@ -104,9 +104,9 @@ test("automatic join keeps one meadow and migrates it to the oldest remaining gu
   const Peer = testBroker();
   const original = client(t, Peer);
   await until(() => original.status === "hosting");
-  original.net.input({ forward: 1, turn: 0 });
-  await until(() => original.world.caught > 0);
-  original.net.input({ forward: 0, turn: 0 });
+  const hostBug = original.world.bugs[0];
+  original.net.input({ forward: 0, turn: 0, targetBug: hostBug.id, targetSequence: 1 });
+  await until(() => original.world.caught === 1);
 
   const first = client(t, Peer);
   await until(() => first.status === "online");
@@ -115,7 +115,11 @@ test("automatic join keeps one meadow and migrates it to the oldest remaining gu
   assert.equal(Object.keys(second.world.players).length, 3);
   assert.deepEqual(second.world.bugs, original.world.bugs);
 
+  const guestBug = first.world.bugs[0];
+  first.net.input({ forward: 0, turn: 0, targetBug: guestBug.id, targetSequence: 1 });
   first.net.input({ forward: 200, turn: NaN });
+  await until(() => second.world.caught === 2 && second.world.players[first.id].swing === 1);
+  assert.ok(!second.world.bugs.some((bug) => bug.id === guestBug.id));
   const startY = first.world.players[first.id].y;
   await until(() => first.world.players[first.id].y < startY - 24);
   first.net.input({ forward: 0, turn: 0 });

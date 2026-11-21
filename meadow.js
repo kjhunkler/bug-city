@@ -1,10 +1,9 @@
 const PLAYER_SPEED = 66;
-const TURN_SPEED = 2.7;
-const CATCH_RADIUS = 11;
+const TURN_SPEED = 1.85;
+const CATCH_RADIUS = 210;
 const SPAWN_RADIUS = 106;
 const KEEP_RADIUS = 148;
 const BUGS_NEAR_PLAYER = 8;
-const MAX_STEP = 1 / 30;
 const FULL_TURN = 2 * Math.PI;
 const BUG_KINDS = ["ladybug", "butterfly", "bee"];
 
@@ -100,25 +99,40 @@ export function movePlayer(player, dt, input) {
   return player;
 }
 
+function catchBug(world, player, input) {
+  const target = input?.targetBug;
+  if (target === null) {
+    delete player.lastTarget;
+    delete player.lastTargetSequence;
+    return;
+  }
+  if (!Number.isSafeInteger(target) || target <= 0) return;
+
+  const sequence = Number.isSafeInteger(input.targetSequence) ? input.targetSequence : 0;
+  if (target === player.lastTarget && sequence === player.lastTargetSequence)
+    return;
+
+  player.lastTarget = target;
+  player.lastTargetSequence = sequence;
+  const index = world.bugs.findIndex((bug) => bug.id === target);
+  const bug = world.bugs[index];
+  if (!bug || !within(bug, player, CATCH_RADIUS)) return;
+
+  world.bugs.splice(index, 1);
+  world.caught++;
+  player.swingX = bug.x;
+  player.swingY = bug.y;
+  player.swing = (player.swing ?? 0) + 1;
+}
+
 export function stepWorld(world, dt, inputs = {}) {
   if (!Number.isFinite(dt) || dt < 0) return world;
 
-  const entries = Object.entries(world.players);
-  const players = entries.map(([, player]) => player);
-  const steps = Math.max(1, Math.ceil(dt / MAX_STEP));
-  const duration = dt / steps;
-
-  // Subdivide long frames so a walker cannot pass through a bug between catches.
-  for (let step = 0; step < steps; step++) {
-    for (const [id, player] of entries) {
-      movePlayer(player, duration, Object.hasOwn(inputs, id) ? inputs[id] : undefined);
-    }
-    const previousBugCount = world.bugs.length;
-    world.bugs = world.bugs.filter((bug) =>
-      players.every((player) => !within(bug, player, CATCH_RADIUS)),
-    );
-    world.caught += previousBugCount - world.bugs.length;
+  for (const [id, player] of Object.entries(world.players)) {
+    const input = Object.hasOwn(inputs, id) ? inputs[id] : undefined;
+    catchBug(world, player, input);
+    movePlayer(player, dt, input);
   }
-  keepBugsNearPlayers(world, players);
+  keepBugsNearPlayers(world, Object.values(world.players));
   return world;
 }

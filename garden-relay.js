@@ -110,7 +110,7 @@ export function createGardenRelay({
           "X-Accel-Buffering": "no",
         });
         res.write(`retry: 1000\nevent: identity\ndata: ${JSON.stringify(id)}\n\n`);
-        const peer = { res, input: oldPeer?.input ?? { turn: 0, forward: 0 } };
+        const peer = { res, input: oldPeer?.input ?? { turn: 0, forward: 0, targetBug: null, targetSequence: null } };
         peers.set(id, peer);
         if (oldPeer) {
           oldPeer.res.end();
@@ -147,9 +147,16 @@ export function createGardenRelay({
       if (peers.get(id) !== peer) {
         res.writeHead(409).end();
       } else if (action === "input" && Number.isFinite(body?.turn) && Number.isFinite(body.forward)) {
+        const hasTarget = Number.isSafeInteger(body.targetBug) && body.targetBug > 0;
+        const targetBug = hasTarget ? body.targetBug : peer.input.targetBug;
+        const targetSequence = hasTarget && Number.isSafeInteger(body.targetSequence) && body.targetSequence > 0
+          ? body.targetSequence
+          : targetBug === peer.input.targetBug ? peer.input.targetSequence : null;
         peer.input = {
           turn: Math.max(-1, Math.min(1, body.turn)),
           forward: Math.max(-1, Math.min(1, body.forward)),
+          targetBug,
+          targetSequence,
         };
         if (host !== id) {
           const event = JSON.stringify({ id, input: peer.input });

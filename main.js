@@ -20,8 +20,11 @@ let camera = { ...world.players[myId] },
   snapshotTime = 0,
   priorCount = 0,
   flashUntil = 0;
+let targets = [];
+const swings = Object.create(null),
+  seenSwings = new Map();
 const keys = new Set(),
-  axis = { turn: 0, forward: 0 };
+  axis = { turn: 0, forward: 0, targetBug: 0, targetSequence: 0 };
 const angleDelta = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 function receive(next, id) {
   if (!next.players[id]) return;
@@ -29,6 +32,8 @@ function receive(next, id) {
   if (reset) {
     camera = { ...next.players[id] };
     remote = {};
+    axis.targetBug = 0;
+    seenSwings.clear();
     priorCount = next.caught;
   }
   world = next;
@@ -98,6 +103,32 @@ stick.onpointercancel = release;
 stick.onpointerup = (e) => {
   if (e.pointerId === pointer) release();
 };
+// Hit-test the last painted sprites so steering and screen rotation use the same projection.
+canvas.onpointerdown = (e) => {
+  if (e.button !== 0) return;
+  const box = canvas.getBoundingClientRect();
+  const px = ((e.clientX - box.left) * canvas.width) / box.width,
+    py = ((e.clientY - box.top) * canvas.height) / box.height;
+  const touchRadius = (21 * canvas.width) / box.width;
+  let nearest = null,
+    best = Infinity;
+  for (const target of targets) {
+    const distance = Math.hypot(px - target.x, py - target.y);
+    if (distance <= Math.max(touchRadius, 7 * target.size) && distance < best) {
+      best = distance;
+      nearest = target;
+    }
+  }
+  if (!nearest) return;
+  swings[myId] = {
+    x: nearest.bug.x,
+    y: nearest.bug.y,
+    start: performance.now() / 1000,
+  };
+  axis.targetBug = nearest.id;
+  axis.targetSequence++;
+  connection.input(axis);
+};
 function fullscreen() {
   if (!document.fullscreenElement)
     document.documentElement
@@ -152,7 +183,7 @@ document.addEventListener("wheel", (e) => e.preventDefault(), {
 function resize() {
   const w = canvas.clientWidth,
     h = canvas.clientHeight;
-  const scale = Math.max(1, Math.min(w, h) / 205, Math.max(w, h) / 550);
+  const scale = Math.max(1, Math.min(w, h) / 155, Math.max(w, h) / 405);
   canvas.width = Math.round(w / scale);
   canvas.height = Math.round(h / scale);
 }
@@ -190,13 +221,29 @@ function frame(now) {
     }
     for (const id of Object.keys(remote))
       if (!world.players[id]) delete remote[id];
-    paint(
+    for (const [key, p] of Object.entries(world.players)) {
+      if (
+        key !== myId &&
+        p.swing &&
+        seenSwings.has(key) &&
+        seenSwings.get(key) !== p.swing
+      )
+        swings[key] = { x: p.swingX, y: p.swingY, start: now / 1000 };
+      seenSwings.set(key, p.swing || 0);
+    }
+    for (const key of seenSwings.keys())
+      if (!world.players[key]) {
+        seenSwings.delete(key);
+        delete swings[key];
+      }
+    targets = paint(
       ctx,
       { ...world, players: { ...remote, [myId]: camera } },
       myId,
       camera,
       now / 1000,
       Math.abs(axis.forward) > 0.1,
+      swings,
     );
   }
   if (world.caught > priorCount) {
