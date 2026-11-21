@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#20281f" />
+    <title>Bug City · Colony Outpost</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="public/icons/beetle-192.png" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <img src="public/icons/beetle-192.png" alt="" /> Bug City
+      </div>
+      <span class="tag">SOLO PLAYTEST</span>
+    </header>
+    <main>
+      <section class="title">
+        <div>
+          <small>FIELD STATION &nbsp;/&nbsp; <b id="sector">COLONY</b></small>
+          <h1 id="place">Lantern Hollow</h1>
+        </div>
+        <span id="safe">● &nbsp; Safe zone</span>
+      </section>
+      <div class="layout">
+        <section class="field">
+          <canvas
+            width="320"
+            height="180"
+            aria-label="Playable field. Move with WASD or arrows. Space attacks. E interacts."
+          ></canvas>
+          <div class="controls">
+            <span><kbd>WASD</kbd> Move</span><span><kbd>SPACE</kbd> Strike</span
+            ><span><kbd>E</kbd> Interact</span>
+          </div>
+          <div class="touch">
+            <button id="stick" aria-label="Drag to move">✥</button
+            ><button id="strike">Strike</button>
+          </div>
+        </section>
+        <aside>
+          <small>FIELD JOURNAL</small>
+          <h2 id="mission">Salvage run</h2>
+          <p id="brief">
+            Venture beyond the colony, gather salvage, and reach the eastern
+            beacon to bring it home.
+          </p>
+          <dl>
+            <div>
+              <dt>Vitality</dt>
+              <dd id="hp"></dd>
+            </div>
+            <div>
+              <dt>Backpack</dt>
+              <dd id="bag"></dd>
+            </div>
+            <div>
+              <dt>Colony stash</dt>
+              <dd id="stash"></dd>
+            </div>
+          </dl>
+          <button id="action">Enter expedition &nbsp; →</button>
+        </aside>
+      </div>
+      <footer>
+        <small>FIELD LOG</small><span id="log" role="status"></span>
+      </footer>
+    </main>
+    <script type="module" src="main.js"></script>
+  </body>
+</html>

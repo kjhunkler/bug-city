@@ -22,9 +22,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: |
+          mkdir -p dist/public
+          cp index.html style.css main.js art.js game.js sw.js manifest.webmanifest dist/
+          cp -r public/icons dist/public/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: public
+          path: dist
       - id: deployment
         uses: actions/deploy-pages@v4

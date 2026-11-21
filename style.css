@@ -1,0 +1,253 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: #f0eddf;
+  color: #293328;
+  font:
+    16px "Trebuchet MS",
+    sans-serif;
+}
+header {
+  background: #242e25;
+  color: #efe9d6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px max(5vw, 20px);
+  border-bottom: 4px solid #acb580;
+}
+.brand {
+  font:
+    bold 28px Georgia,
+    serif;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.brand img {
+  width: 40px;
+  image-rendering: pixelated;
+}
+.tag,
+small,
+kbd {
+  font: bold 11px/1.5 monospace;
+  letter-spacing: 0.12em;
+}
+.tag {
+  border: 1px solid #677160;
+  padding: 4px 8px;
+  color: #d1d6b4;
+}
+main {
+  max-width: 1440px;
+  padding: 4vh 5vw;
+  margin: auto;
+}
+.title,
+.controls,
+footer,
+.layout,
+dl div {
+  display: flex;
+}
+.title {
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.title small,
+aside small,
+footer small {
+  color: #626d53;
+}
+.title b {
+  color: #815232;
+}
+h1,
+h2 {
+  font-family: Georgia, serif;
+  margin: 5px 0;
+  letter-spacing: -0.045em;
+}
+h1 {
+  font-size: clamp(36px, 5vw, 72px);
+  line-height: 1.05;
+}
+h2 {
+  font-size: 32px;
+}
+#safe {
+  font: 13px monospace;
+  background: #dbe2c9;
+  padding: 7px 10px;
+}
+.layout {
+  gap: 22px;
+  align-items: stretch;
+}
+.field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  align-self: flex-start;
+  background: #242e25;
+  color: #e1e4cf;
+  border: 4px solid #343e31;
+}
+canvas {
+  width: 100%;
+  display: block;
+  image-rendering: pixelated;
+  touch-action: none;
+}
+.controls {
+  gap: 24px;
+  padding: 10px;
+  align-items: center;
+  font-size: 12px;
+}
+kbd {
+  color: #cfcead;
+}
+aside {
+  width: 25%;
+  min-width: 210px;
+  padding: 20px;
+  background: #e5e4d3;
+  border-top: 4px solid #788064;
+  display: flex;
+  flex-direction: column;
+}
+p {
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 4px 0 10px;
+}
+dl {
+  margin: 8px 0 18px;
+}
+dl div {
+  justify-content: space-between;
+  border-bottom: 1px solid #bfc5af;
+  padding: 7px 0;
+  font-size: 13px;
+}
+dd {
+  font-weight: bold;
+}
+button {
+  cursor: pointer;
+  border: 0;
+  border-radius: 3px;
+  background: #344a37;
+  color: white;
+  font: 600 14px inherit;
+  font-family: inherit;
+  padding: 12px;
+}
+#action {
+  margin-top: auto;
+  font-weight: bold;
+}
+footer {
+  gap: 18px;
+  font-size: 14px;
+  padding: 15px 0;
+  align-items: baseline;
+}
+footer small {
+  white-space: nowrap;
+}
+.touch {
+  display: none;
+}
+@media (pointer: coarse) {
+  .controls {
+    display: none;
+  }
+  .touch {
+    position: absolute;
+    display: flex;
+    bottom: 5px;
+    left: 6px;
+    right: 6px;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+  .touch button {
+    pointer-events: auto;
+    touch-action: none;
+    opacity: 0.85;
+    min-width: 48px;
+    min-height: 44px;
+  }
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  .layout {
+    display: block;
+  }
+  aside {
+    width: 100%;
+    margin-top: 14px;
+  }
+  main {
+    padding: 18px 12px;
+  }
+  .controls {
+    gap: 12px;
+  }
+}
+@media (max-height: 550px) and (orientation: landscape) {
+  header {
+    padding: 2px 3vw;
+  }
+  .brand {
+    font-size: 20px;
+  }
+  .brand img {
+    width: 24px;
+  }
+  main {
+    padding: 5px 3vw;
+  }
+  .title {
+    margin-bottom: 4px;
+  }
+  .title small {
+    display: none;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  .field {
+    max-width: calc((100dvh - 108px) * 1.77);
+  }
+  aside {
+    flex: 1;
+    padding: 6px 12px;
+    min-width: 150px;
+  }
+  aside small {
+    display: none;
+  }
+  h2 {
+    font-size: 20px;
+  }
+  p,
+  dl div {
+    font-size: 11px;
+  }
+  dl div {
+    padding: 2px;
+  }
+  dl {
+    margin: 0 0 4px;
+  }
+  footer {
+    padding: 3px;
+    font-size: 11px;
+  }
+}
