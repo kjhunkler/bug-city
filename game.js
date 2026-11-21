@@ -91,9 +91,7 @@ export function createGame() {
   return g;
 }
 
-export function step(g, dt, dx = 0, dy = 0) {
-  if (!g || !Number.isFinite(dt) || dt <= 0) return g;
-  dt = Math.min(dt, 0.1);
+export function stepPlayer(g, dt, dx = 0, dy = 0) {
   g.elapsed = (g.elapsed || 0) + dt;
   g.attackCooldown = Math.max(0, (g.attackCooldown || 0) - dt);
 
@@ -145,24 +143,35 @@ export function step(g, dt, dx = 0, dy = 0) {
     }
   }
 
-  for (const enemy of g.enemies) {
+  return g;
+}
+
+export function stepEnemies(enemies, players, dt) {
+  for (const enemy of enemies) {
+    const active = players.filter((player) => player.scene === "run");
+    if (active.length === 0) break;
+    const g = active.reduce((nearest, player) =>
+      distance(player.player, enemy) < distance(nearest.player, enemy)
+        ? player
+        : nearest,
+    );
     enemy.attackCooldown = Math.max(0, (enemy.attackCooldown || 0) - dt);
     const d = distance(g.player, enemy);
     const isStag = enemy.kind === "stag";
     if (enemy.windup > 0) {
       enemy.windup = Math.max(0, enemy.windup - dt);
       if (enemy.windup === 0) {
-        if (distance(g.player, enemy) <= (isStag ? 34 : 25)) {
-          g.player.hp -= isStag ? 2 : 1;
-          g.message = isStag
+        for (const nearby of active) {
+          if (distance(nearby.player, enemy) > (isStag ? 34 : 25)) continue;
+          nearby.player.hp -= isStag ? 2 : 1;
+          nearby.message = isStag
             ? "The Copper Stag crashes through the grove!"
             : "A bug struck you! Move away during its windup.";
-          if (g.player.hp <= 0) {
+          if (nearby.player.hp <= 0) {
             returnHome(
-              g,
+              nearby,
               "You were overwhelmed and lost carried salvage. Recovery kit restored.",
             );
-            return g;
           }
         }
         enemy.attackCooldown = 0.8;
@@ -172,8 +181,12 @@ export function step(g, dt, dx = 0, dy = 0) {
       const fromLair = distance(enemy, lair);
       if (d <= 36 && enemy.attackCooldown <= 0) {
         enemy.windup = 1.2;
-        g.message =
-          "The Copper Stag lowers its antlers! Evade the heavy charge.";
+        for (const nearby of active) {
+          if (distance(nearby.player, enemy) <= 36) {
+            nearby.message =
+              "The Copper Stag lowers its antlers! Evade the heavy charge.";
+          }
+        }
       } else if (d <= 92 && d > 30) {
         // Aggro is limited to the grove; never let the boss chase out of its lair.
         const nextX = enemy.x + ((g.player.x - enemy.x) / d) * 12 * dt;
@@ -195,6 +208,13 @@ export function step(g, dt, dx = 0, dy = 0) {
       enemy.y += ((g.player.y - enemy.y) / d) * 16 * dt;
     }
   }
+}
+
+export function step(g, dt, dx = 0, dy = 0) {
+  if (!g || !Number.isFinite(dt) || dt <= 0) return g;
+  dt = Math.min(dt, 0.1);
+  stepPlayer(g, dt, dx, dy);
+  if (g.scene === "run") stepEnemies(g.enemies, [g], dt);
   return g;
 }
 
