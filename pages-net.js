@@ -23,7 +23,9 @@ function hashScope(scope) {
 
 function playerId() {
   const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
+    "",
+  );
 }
 
 function boundedAxis(value) {
@@ -36,29 +38,56 @@ function boundedCoordinate(value) {
 
 function validSnapshot(message, myId) {
   const { host, roster, world } = message;
-  if (!Array.isArray(roster) || roster.length < 2 || roster.length > MAX_PLAYERS) return false;
-  if (roster[0] !== host || host === myId || !roster.includes(myId)) return false;
-  if (!roster.every((id) => typeof id === "string" && PLAYER_ID.test(id))
-      || new Set(roster).size !== roster.length) {
+  if (
+    !Array.isArray(roster) ||
+    roster.length < 2 ||
+    roster.length > MAX_PLAYERS
+  )
+    return false;
+  if (roster[0] !== host || host === myId || !roster.includes(myId))
+    return false;
+  if (
+    !roster.every((id) => typeof id === "string" && PLAYER_ID.test(id)) ||
+    new Set(roster).size !== roster.length
+  ) {
     return false;
   }
-  if (!world?.players || !Array.isArray(world.bugs) || world.bugs.length > MAX_BUGS) return false;
-  if (![world.seed, world.randomState, world.caught, world.nextBugId].every(Number.isSafeInteger)) {
+  if (
+    !world?.players ||
+    !Array.isArray(world.bugs) ||
+    world.bugs.length > MAX_BUGS
+  )
+    return false;
+  if (
+    ![world.seed, world.randomState, world.caught, world.nextBugId].every(
+      Number.isSafeInteger,
+    )
+  ) {
     return false;
   }
   if (Object.keys(world.players).length !== roster.length) return false;
-  return roster.every((id) => {
-    const player = world.players[id];
-    return player && [player.x, player.y, player.angle].every(boundedCoordinate);
-  }) && world.bugs.every((bug) =>
-    bug && Number.isSafeInteger(bug.id) && boundedCoordinate(bug.x) && boundedCoordinate(bug.y)
-      && ["ladybug", "butterfly", "bee"].includes(bug.kind),
+  return (
+    roster.every((id) => {
+      const player = world.players[id];
+      return (
+        player && [player.x, player.y, player.angle].every(boundedCoordinate)
+      );
+    }) &&
+    world.bugs.every(
+      (bug) =>
+        bug &&
+        Number.isSafeInteger(bug.id) &&
+        boundedCoordinate(bug.x) &&
+        boundedCoordinate(bug.y) &&
+        ["ladybug", "butterfly", "bee"].includes(bug.kind),
+    )
   );
 }
 
 export function connectPages({
   onWorld,
   onStatus,
+  initialWorld,
   Peer = globalThis.Peer,
   scope = new URL("./", import.meta.url).href,
 }) {
@@ -132,8 +161,13 @@ export function connectPages({
   }
 
   function accept(state, conn) {
-    if (active !== state || !hosting || conn.label !== PROTOCOL
-        || pending.size >= MAX_PLAYERS || guests.size >= MAX_PLAYERS - 1) {
+    if (
+      active !== state ||
+      !hosting ||
+      conn.label !== PROTOCOL ||
+      pending.size >= MAX_PLAYERS ||
+      guests.size >= MAX_PLAYERS - 1
+    ) {
       conn.close();
       return;
     }
@@ -157,22 +191,38 @@ export function connectPages({
       if (active !== state) return;
       if (!id && message.type === "join") {
         const candidate = message.id;
-        if (typeof candidate !== "string" || !PLAYER_ID.test(candidate)
-            || candidate === myId || guests.has(candidate) || guests.size >= MAX_PLAYERS - 1) {
+        if (
+          typeof candidate !== "string" ||
+          !PLAYER_ID.test(candidate) ||
+          candidate === myId ||
+          guests.has(candidate) ||
+          guests.size >= MAX_PLAYERS - 1
+        ) {
           conn.close();
           return;
         }
         pending.delete(conn);
         id = candidate;
         // Reserve the players we expect to rejoin before admitting new players.
-        if (!Object.hasOwn(world.players, id) && Object.keys(world.players).length >= MAX_PLAYERS) {
+        if (
+          !Object.hasOwn(world.players, id) &&
+          Object.keys(world.players).length >= MAX_PLAYERS
+        ) {
           conn.close();
           return;
         }
         rejoining.delete(id);
         addPlayer(world, id);
-        guests.set(id, { conn, input: ZERO_INPUT, lastInput: performance.now() });
-      } else if (id && message.type === "input" && guests.get(id)?.conn === conn) {
+        guests.set(id, {
+          conn,
+          input: ZERO_INPUT,
+          lastInput: performance.now(),
+        });
+      } else if (
+        id &&
+        message.type === "input" &&
+        guests.get(id)?.conn === conn
+      ) {
         const guest = guests.get(id);
         guest.input = {
           turn: boundedAxis(message.turn),
@@ -193,7 +243,10 @@ export function connectPages({
         else rejoining.set(id, performance.now() + REJOIN_MS);
       }
     } else {
-      world = createWorld(seed);
+      // Keep the first child’s meadow, including catches made during discovery.
+      world =
+        initialWorld?.(myId) ??
+        createWorld(crypto.getRandomValues(new Uint32Array(1))[0]);
     }
     addPlayer(world, myId);
     snapshot = { world, host: myId, roster: [myId] };
@@ -205,7 +258,11 @@ export function connectPages({
 
   function findHost(state) {
     if (state.conn) return;
-    const conn = state.peer.connect(room, { label: PROTOCOL, reliable: true, serialization: "binary" });
+    const conn = state.peer.connect(room, {
+      label: PROTOCOL,
+      reliable: true,
+      serialization: "binary",
+    });
     if (!conn) return;
     state.conn = conn;
     state.deadline = performance.now() + HANDSHAKE_MS;
@@ -271,7 +328,11 @@ export function connectPages({
     const now = performance.now();
     if (retry && now >= retry.at) start(retry.mode);
     if (!active) return;
-    if (active.peer.disconnected && now >= active.reconnectAt && !active.peer.destroyed) {
+    if (
+      active.peer.disconnected &&
+      now >= active.reconnectAt &&
+      !active.peer.destroyed
+    ) {
       active.reconnectAt = now + 2000;
       active.peer.reconnect();
     }
@@ -281,7 +342,8 @@ export function connectPages({
       return;
     }
     if (!hosting) {
-      if (status === "online") send(active.conn, encode({ type: "input", ...input }));
+      if (status === "online")
+        send(active.conn, encode({ type: "input", ...input }));
       return;
     }
     for (const [conn, deadline] of pending) {
@@ -301,7 +363,10 @@ export function connectPages({
     }
     stepWorld(world, Math.min((now - lastFrame) / 1000, 0.1), inputs);
     lastFrame = now;
-    const roster = [myId, ...Object.keys(world.players).filter((id) => id !== myId)];
+    const roster = [
+      myId,
+      ...Object.keys(world.players).filter((id) => id !== myId),
+    ];
     snapshot = { world, host: myId, roster };
     if (guests.size) {
       const payload = encode({ type: "world", ...snapshot });
@@ -315,7 +380,10 @@ export function connectPages({
   const timer = setInterval(tick, FRAME_MS);
   return {
     input(next) {
-      input = { turn: boundedAxis(next?.turn), forward: boundedAxis(next?.forward) };
+      input = {
+        turn: boundedAxis(next?.turn),
+        forward: boundedAxis(next?.forward),
+      };
     },
     close() {
       closed = true;

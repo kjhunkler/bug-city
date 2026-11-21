@@ -102,6 +102,9 @@ export function paint(ctx, world, id, camera, time, walking) {
     }
   }
   function tree(x, y, n) {
+    const overlapsExplorer =
+      Math.abs(x - w / 2) < 19 && y > h / 2 + 6 && y < h / 2 + 34;
+    if (overlapsExplorer) ctx.globalAlpha = 0.45;
     oval(x + 2, y + 1, 11, 3, "#a3be72");
     r(x - 2, y - 8, 5, 9, "#90683f");
     r(x, y - 4, 2, 5, "#b5824c");
@@ -112,6 +115,7 @@ export function paint(ctx, world, id, camera, time, walking) {
     oval(x - 3, y - 21, 6, 3, "#a5c877");
     r(x + 3, y - 12, 2, 2, "#e8b35e");
     r(x - 6, y - 15, 2, 2, "#eff2ae");
+    ctx.globalAlpha = 1;
   }
   function flowers(x, y, n) {
     for (let j = 0; j < 3; j++) {
@@ -147,7 +151,7 @@ export function paint(ctx, world, id, camera, time, walking) {
       r(x - 2, y - 4, 4, 2, "#494538");
     }
   }
-  function explorer(x, y, color, bounce) {
+  function explorer(x, y, color, bounce, heading) {
     oval(x, y + 2, 8, 2, "#92ae6b");
     y -= bounce;
     r(x - 5, y - 2, 4, 4, "#614e3c");
@@ -165,6 +169,12 @@ export function paint(ctx, world, id, camera, time, walking) {
     r(x - 5, y - 20, 11, 5, "#dfb36c");
     r(x - 4, y - 21, 8, 2, "#f6d796");
     r(x - 5, y - 17, 11, 2, color);
+    if (Math.cos(heading) < -0.35) {
+      r(x - 3, y - 12, 1, 1, "#604535");
+      r(x + 3, y - 12, 1, 1, "#604535");
+      r(x - 3, y - 7, 7, 5, color);
+      r(x - 4, y - 8, 2, 5, "#f0ce89");
+    }
     r(x + 7, y - 11, 1, 7, "#846849");
     oval(x + 9, y - 14, 3, 3, "#849981");
     oval(x + 9, y - 14, 2, 2, "#e5ecc5");
@@ -189,6 +199,7 @@ export function paint(ctx, world, id, camera, time, walking) {
                 hash(key.length, key.charCodeAt(0), 0) % 3
               ],
           local && walking ? Math.floor(time * 6) % 2 : 0,
+          p.angle - camera.angle,
         ),
     });
   }

@@ -45,6 +45,11 @@ function status(value) {
 }
 const localServer = document.querySelector('meta[name="bug-city-garden"]');
 const connection = (localServer ? connectGarden : connectPages)({
+  initialWorld(id) {
+    const initial = structuredClone(world);
+    initial.players = { [id]: { ...world.players[myId] } };
+    return initial;
+  },
   onWorld: receive,
   onStatus: status,
 });
@@ -62,8 +67,8 @@ function recalc() {
   const x = keyboardX || stickX,
     y = keyboardY || stickY,
     length = Math.max(1, Math.hypot(x, y));
-  axis.turn = x / length;
-  axis.forward = -y / length;
+  axis.turn = Math.abs(x) < 0.1 ? 0 : x / length;
+  axis.forward = Math.abs(y) < 0.1 ? 0 : -y / length;
   knob.style.transform =
     "translate(" + axis.turn * 54 + "%," + -axis.forward * 54 + "%)";
   connection.input(axis);
