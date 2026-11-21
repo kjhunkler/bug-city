@@ -59,7 +59,10 @@ function frame(now) {
       ? "Venture beyond the colony, gather salvage, and reach the eastern beacon to bring it home."
       : "Extract at the eastern beacon. For a richer haul, seek the Copper Stag in the northeast grove.",
   );
-  set("action", home ? "Enter expedition  →" : "Activate beacon");
+  document.body.classList.toggle("expedition", !home);
+  const distance = home ? 0 : Math.hypot(g.player.x-g.exit.x,g.player.y-g.exit.y);
+  el("action").disabled = !home && (distance > 14 || g.extracting > 0);
+  set("action", home ? "Enter expedition  →" : g.extracting > 0 ? "Hold position · " + g.extracting.toFixed(1) + "s" : distance <= 14 ? "Extract now  [E]" : "Reach EXIT · " + Math.ceil(distance) + " px");
   set("log", g.message);
   set("hp", g.player.hp + " / 5");
   set("bag", g.carried + " salvage");
@@ -77,14 +80,21 @@ function frame(now) {
   }
   requestAnimationFrame(frame);
 }
-el("action").onclick = () => act(g);
+function fullscreen() {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
+}
+function interact() {
+  if (g.scene === "home") fullscreen();
+  act(g);
+}
+el("action").onclick = interact;
 window.onkeydown = (e) => {
   const k = e.key.toLowerCase();
   if (k === " " && e.target.tagName === "BUTTON") return;
   if ([" ", "arrowup", "arrowdown", "arrowright", "arrowleft"].includes(k))
     e.preventDefault();
   keys.add(k);
-  if (!e.repeat && k === "e") act(g);
+  if (!e.repeat && k === "e") interact();
   if (k === " ") strike();
 };
 window.onkeyup = (e) => keys.delete(e.key.toLowerCase());

@@ -122,6 +122,14 @@ export function paint(ctx, g, t) {
   if (!home) {
     oval(g.exit.x, g.exit.y, 9, 4, "#9bbe93");
     oval(g.exit.x, g.exit.y, 6, 2, "#415e51");
+    const bx = g.exit.x, by = g.exit.y;
+    rect(bx-7,by-12,2,12,"#e1d7a6");
+    rect(bx+5,by-12,2,12,"#e1d7a6");
+    rect(bx-15,by-22,30,11,"#193e37");
+    ctx.fillStyle="#dcffc3";
+    ctx.font="bold 8px monospace";
+    ctx.fillText("EXIT",bx-10,by-14);
+    if(g.extracting > 0) rect(bx-14,by-11,28*(1-g.extracting/3),2,"#ffe59a");
     for (const l of g.loot) {
       if (l.kind === "crown") {
         rect(l.x - 4, l.y - 2, 9, 4, "#dc924e");
