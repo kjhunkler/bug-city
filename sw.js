@@ -8,7 +8,7 @@ const SHELL = [
   "./game.js",
   "./coop.js",
   "./network.js",
-  "./pairing.js",
+  "./pairing.js", "./lan.js",
   "./manifest.webmanifest",
   "./public/icons/beetle-192.png",
   "./public/icons/beetle-512.png",

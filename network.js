@@ -252,7 +252,7 @@ export function createLink({ onOpen, onMessage, onClose } = {}) {
           typeof message !== "object" || Array.isArray(message)) return false;
       try {
         const data = JSON.stringify(message);
-        if (typeof data !== "string" || data.length > MAX_MESSAGE_BYTES) return false;
+        if (typeof data !== "string" || !data.startsWith("{") || data.length > MAX_MESSAGE_BYTES) return false;
         const size = encoder.encode(data).byteLength;
         if (size > MAX_MESSAGE_BYTES || channel.bufferedAmount + size > MAX_BUFFERED_BYTES) return false;
         channel.send(data);

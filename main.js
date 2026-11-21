@@ -33,9 +33,9 @@ el("partyButton").onclick = () => {
     return;
   }
   openPairing({
-    ready(link, host) {
+    ready(link, host, lan) {
       const party = host ? createParty() : null;
-      session = { link, party, host, banked: 0, crowns: 0 };
+      session = { link, party, host, lan, banked: 0, crowns: 0 };
       queued = {};
       peerInput = {};
       receivedAt = performance.now();
@@ -143,7 +143,7 @@ function frame(now) {
   set(
     "safe",
     session
-      ? "●  Co-op · " + (session.host ? "Host" : "Guest")
+      ? "●  Co-op · " + (session.lan ? "LAN" : session.host ? "Host" : "Guest")
       : home
         ? "●  Safe zone"
         : "◆  Hostile zone",
@@ -158,11 +158,15 @@ function frame(now) {
   const distance = home
     ? 0
     : Math.hypot(g.player.x - g.exit.x, g.player.y - g.exit.y);
-  el("action").disabled = !home && (distance > 14 || g.extracting > 0);
+  const waiting = Boolean(home && session && !g.ally);
+  el("action").disabled =
+    waiting || (!home && (distance > 14 || g.extracting > 0));
   set(
     "action",
     home
-      ? "Enter expedition  →"
+      ? waiting
+        ? "Waiting for partner"
+        : "Enter expedition  →"
       : g.extracting > 0
         ? "Hold position · " + g.extracting.toFixed(1) + "s"
         : distance <= 14

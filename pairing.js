@@ -1,6 +1,8 @@
 import { createLink } from "./network.js";
+import { createLanLink } from "./lan.js";
 const el = (id) => document.getElementById(id);
 export function openPairing({ ready, receive, closed, fullscreen }) {
+  const lan = !!document.querySelector('meta[name="bug-city-lan"]');
   const dialog = el("partyDialog");
   let link = null,
     host = false,
@@ -14,11 +16,11 @@ export function openPairing({ ready, receive, closed, fullscreen }) {
     el("outCode").value = el("inCode").value = "";
   }
   function makeLink() {
-    return createLink({
+    return (lan ? createLanLink : createLink)({
       onOpen() {
         connected = true;
         dialog.close();
-        ready(link, host);
+        ready(link, host && !lan, lan);
       },
       onMessage: receive,
       onClose(reason) {
@@ -51,8 +53,12 @@ export function openPairing({ ready, receive, closed, fullscreen }) {
     link = makeLink();
     el("inLabel").hidden = false;
     if (!host) {
-      status("Paste the host’s invitation, then create your reply.");
-      el("connect").textContent = "Create reply";
+      status(
+        lan
+          ? "Enter the room code from the host."
+          : "Paste the host’s invitation, then create your reply.",
+      );
+      el("connect").textContent = lan ? "Join room" : "Create reply";
       el("connect").hidden = false;
       return;
     }
@@ -62,6 +68,11 @@ export function openPairing({ ready, receive, closed, fullscreen }) {
       if (active !== link) return;
       el("outCode").value = code;
       el("outLabel").hidden = false;
+      if (lan) {
+        el("inLabel").hidden = true;
+        status("Give your friend this room code. Waiting for them to join…");
+        return;
+      }
       el("connect").textContent = "Connect guest";
       el("connect").hidden = false;
       status("Send your code to your friend, then paste their reply below.");
@@ -82,6 +93,10 @@ export function openPairing({ ready, receive, closed, fullscreen }) {
       else {
         const reply = await active.answer(code);
         if (active !== link) return;
+        if (lan) {
+          el("inLabel").hidden = el("connect").hidden = true;
+          return;
+        }
         el("outCode").value = reply;
         el("outLabel").hidden = false;
         status(
@@ -105,5 +120,8 @@ export function openPairing({ ready, receive, closed, fullscreen }) {
   };
   reset();
   status("");
+  el("pairHelp").textContent = lan
+    ? "Open this server on both devices. Host a run and share its room code with your friend."
+    : "One player hosts. Exchange the connection codes privately with your friend. Keep both games open during the run.";
   dialog.showModal();
 }
