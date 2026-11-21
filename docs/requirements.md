@@ -1,11 +1,11 @@
 # Bug City
 
-Bug City is a cooperative bug-catching game for children aged three to five. Opening the game drops the child straight into a meadow. Walking up to a bug catches it for everyone. Players can wander and catch bugs for as long as they like.
+Bug City is a cooperative bug-catching game for children aged three to five. Opening the game drops the child straight into a meadow. Tap a bug to swipe the explorer’s net and add it to the shared jar. Players can wander and catch bugs for as long as they like.
 
 ## Playing
 
 - Use one large stick at the bottom of the screen. Push forward to walk, tilt left or right to turn, and release to stop.
-- Keep the explorer in the middle of the screen. Rotate and pan the camera through a seeded, procedurally generated meadow.
+- Keep the explorer in the middle of the screen. Keep nearby bugs large and look ahead toward the horizon. Rotate and pan the camera through a seeded, procedurally generated meadow.
 - Show recognizable insects, friendly explorers and shared catches through pictures. A child should be able to play before they can read.
 - Fill the viewport and request native fullscreen at the first permitted gesture. Keep game input free of scrolling, pinch zoom, double-tap zoom, text highlighting, selection handles and context menus.
 - Preserve the feel of a handheld pixel game in landscape and portrait.
