@@ -17,7 +17,7 @@
       <div class="brand">
         <img src="public/icons/beetle-192.png" alt="" /> Bug City
       </div>
-      <span class="tag">SOLO PLAYTEST</span>
+      <button id="partyButton">Play with a friend</button>
     </header>
     <main>
       <section class="title">
@@ -75,6 +75,27 @@
         <small>FIELD LOG</small><span id="log" role="status"></span>
       </footer>
     </main>
+    <dialog id="partyDialog">
+      <h2>Two-player expedition</h2>
+      <p>
+        One player hosts. Exchange the connection codes privately with your
+        friend. Keep both games open during the run.
+      </p>
+      <div class="pairActions">
+        <button id="host">Host a run</button
+        ><button id="join">Join a host</button>
+      </div>
+      <label id="outLabel" hidden
+        >Your code<textarea id="outCode" readonly></textarea
+        ><button id="copy">Copy code</button></label
+      >
+      <label id="inLabel" hidden
+        >Friend’s code<textarea id="inCode" spellcheck="false"></textarea>
+      </label>
+      <button hidden id="connect">Connect</button>
+      <p id="pairStatus" role="status"></p>
+      <button id="dismiss">Close</button>
+    </dialog>
     <script type="module" src="main.js"></script>
   </body>
 </html>

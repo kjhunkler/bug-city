@@ -1,7 +1,10 @@
 import { createGame, step, act, attack } from "./game.js";
 import { paint } from "./art.js";
-const g = createGame(),
-  canvas = document.querySelector("canvas"),
+import { createParty, updateParty, viewParty } from "./coop.js";
+import { openPairing } from "./pairing.js";
+const solo = createGame();
+let g = solo;
+const canvas = document.querySelector("canvas"),
   ctx = canvas.getContext("2d");
 const el = (id) => document.getElementById(id),
   keys = new Set();
@@ -18,6 +21,66 @@ let saved = g.stash,
   aim = null,
   sx = 0,
   sy = 0;
+let session = null;
+let queued = {};
+let peerInput = {};
+let sentAt = 0;
+let receivedAt = 0;
+el("partyButton").onclick = () => {
+  if (session) {
+    session.link.close();
+    endSession("Co-op ended. Returned to your solo colony.");
+    return;
+  }
+  openPairing({
+    ready(link, host) {
+      const party = host ? createParty() : null;
+      session = { link, party, host, banked: 0, crowns: 0 };
+      queued = {};
+      peerInput = {};
+      receivedAt = performance.now();
+      sentAt = 0;
+      if (host) g = viewParty(party, 0);
+      set("partyButton", "Leave co-op");
+    },
+    receive(msg) {
+      if (!session || !msg || typeof msg !== "object") return;
+      if (session.host && msg.type === "input") {
+        const axis = (n) =>
+          Number.isFinite(n) ? Math.max(-1, Math.min(1, n)) : 0;
+        peerInput = {
+          dx: axis(msg.dx),
+          dy: axis(msg.dy),
+          attack: peerInput.attack || msg.attack === true,
+          action: peerInput.action || msg.action === true,
+          aimX: axis(msg.aimX),
+          aimY: axis(msg.aimY),
+        };
+        receivedAt = performance.now();
+      } else if (
+        !session.host &&
+        msg.type === "view" &&
+        ["run", "home"].includes(msg.state?.scene) &&
+        msg.state.player &&
+        Array.isArray(msg.state.enemies) &&
+        Array.isArray(msg.state.loot) &&
+        (msg.state.scene === "home" || msg.state.exit)
+      ) {
+        g = msg.state;
+      }
+    },
+    closed: endSession,
+    fullscreen,
+  });
+};
+function endSession(reason) {
+  session = null;
+  queued = {};
+  peerInput = {};
+  g = solo;
+  g.message = reason;
+  set("partyButton", "Play with a friend");
+}
 function strike(dx = 0, dy = 0) {
   if (!dx && !dy) {
     const closest = [...g.enemies].sort(
@@ -30,7 +93,14 @@ function strike(dx = 0, dy = 0) {
       dy = closest.y - g.player.y;
     }
   }
-  attack(g, dx, dy);
+  if (session) {
+    const length = Math.hypot(dx, dy) || 1;
+    Object.assign(queued, {
+      attack: true,
+      aimX: dx / length,
+      aimY: dy / length,
+    });
+  } else attack(g, dx, dy);
 }
 function set(id, value) {
   if (el(id).textContent !== value) el(id).textContent = value;
@@ -38,21 +108,46 @@ function set(id, value) {
 function frame(now) {
   const dt = (now - previous) / 1000;
   previous = now;
-  step(
-    g,
-    dt,
+  const dx =
     sx +
-      (keys.has("d") || keys.has("arrowright")) -
-      (keys.has("a") || keys.has("arrowleft")),
+    Number(keys.has("d") || keys.has("arrowright")) -
+    Number(keys.has("a") || keys.has("arrowleft"));
+  const dy =
     sy +
-      (keys.has("s") || keys.has("arrowdown")) -
-      (keys.has("w") || keys.has("arrowup")),
-  );
+    Number(keys.has("s") || keys.has("arrowdown")) -
+    Number(keys.has("w") || keys.has("arrowup"));
+  if (!session) step(g, dt, dx, dy);
+  else {
+    const input = { dx, dy, ...queued };
+    if (session.host) {
+      updateParty(session.party, dt, [
+        input,
+        now - receivedAt < 500 ? peerInput : {},
+      ]);
+      peerInput.attack = peerInput.action = false;
+      queued = {};
+      g = viewParty(session.party, 0);
+      if (now - sentAt >= 50) {
+        session.link.send({ type: "view", state: viewParty(session.party, 1) });
+        sentAt = now;
+      }
+    } else if (now - sentAt >= 50 || queued.attack || queued.action) {
+      if (session.link.send({ type: "input", ...input })) queued = {};
+      sentAt = now;
+    }
+  }
   paint(ctx, g, now / 1000);
   const home = g.scene === "home";
   set("place", home ? "Lantern Hollow" : "The Rustway");
   set("sector", home ? "COLONY" : "EXPEDITION");
-  set("safe", home ? "●  Safe zone" : "◆  Hostile zone");
+  set(
+    "safe",
+    session
+      ? "●  Co-op · " + (session.host ? "Host" : "Guest")
+      : home
+        ? "●  Safe zone"
+        : "◆  Hostile zone",
+  );
   set(
     "brief",
     home
@@ -60,35 +155,63 @@ function frame(now) {
       : "Extract at the eastern beacon. For a richer haul, seek the Copper Stag in the northeast grove.",
   );
   document.body.classList.toggle("expedition", !home);
-  const distance = home ? 0 : Math.hypot(g.player.x-g.exit.x,g.player.y-g.exit.y);
+  const distance = home
+    ? 0
+    : Math.hypot(g.player.x - g.exit.x, g.player.y - g.exit.y);
   el("action").disabled = !home && (distance > 14 || g.extracting > 0);
-  set("action", home ? "Enter expedition  →" : g.extracting > 0 ? "Hold position · " + g.extracting.toFixed(1) + "s" : distance <= 14 ? "Extract now  [E]" : "Reach EXIT · " + Math.ceil(distance) + " px");
+  set(
+    "action",
+    home
+      ? "Enter expedition  →"
+      : g.extracting > 0
+        ? "Hold position · " + g.extracting.toFixed(1) + "s"
+        : distance <= 14
+          ? "Extract now  [E]"
+          : "Reach EXIT · " + Math.ceil(distance) + " px",
+  );
   set("log", g.message);
   set("hp", g.player.hp + " / 5");
   set("bag", g.carried + " salvage");
   set("stash", g.stash + " salvage");
   el("trophy").hidden = !home || !g.crowns;
   set("crowns", String(g.crowns));
-  if (saved !== g.stash) {
+  if (
+    session &&
+    g !== solo &&
+    g.scene === "home" &&
+    Number.isSafeInteger(g.stash) &&
+    g.stash > session.banked
+  ) {
+    solo.stash += g.stash - session.banked;
+    session.banked = g.stash;
+    if (Number.isSafeInteger(g.crowns) && g.crowns > session.crowns) {
+      solo.crowns += g.crowns - session.crowns;
+      session.crowns = g.crowns;
+    }
+  }
+  if (saved !== solo.stash) {
     try {
       localStorage.setItem(
         "bug-city-colony",
-        JSON.stringify({ stash: g.stash, crowns: g.crowns }),
+        JSON.stringify({ stash: solo.stash, crowns: solo.crowns }),
       );
     } catch {}
-    saved = g.stash;
+    saved = solo.stash;
   }
   requestAnimationFrame(frame);
 }
 function fullscreen() {
-  if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
+  if (!document.fullscreenElement)
+    document.documentElement.requestFullscreen?.().catch(() => {});
 }
 function interact() {
   if (g.scene === "home") fullscreen();
-  act(g);
+  if (session) queued.action = true;
+  else act(g);
 }
 el("action").onclick = interact;
 window.onkeydown = (e) => {
+  if (el("partyDialog").open) return;
   const k = e.key.toLowerCase();
   if (k === " " && e.target.tagName === "BUTTON") return;
   if ([" ", "arrowup", "arrowdown", "arrowright", "arrowleft"].includes(k))

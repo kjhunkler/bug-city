@@ -122,14 +122,16 @@ export function paint(ctx, g, t) {
   if (!home) {
     oval(g.exit.x, g.exit.y, 9, 4, "#9bbe93");
     oval(g.exit.x, g.exit.y, 6, 2, "#415e51");
-    const bx = g.exit.x, by = g.exit.y;
-    rect(bx-7,by-12,2,12,"#e1d7a6");
-    rect(bx+5,by-12,2,12,"#e1d7a6");
-    rect(bx-15,by-22,30,11,"#193e37");
-    ctx.fillStyle="#dcffc3";
-    ctx.font="bold 8px monospace";
-    ctx.fillText("EXIT",bx-10,by-14);
-    if(g.extracting > 0) rect(bx-14,by-11,28*(1-g.extracting/3),2,"#ffe59a");
+    const bx = g.exit.x,
+      by = g.exit.y;
+    rect(bx - 7, by - 12, 2, 12, "#e1d7a6");
+    rect(bx + 5, by - 12, 2, 12, "#e1d7a6");
+    rect(bx - 15, by - 22, 30, 11, "#193e37");
+    ctx.fillStyle = "#dcffc3";
+    ctx.font = "bold 8px monospace";
+    ctx.fillText("EXIT", bx - 10, by - 14);
+    if (g.extracting > 0)
+      rect(bx - 14, by - 11, 28 * (1 - g.extracting / 3), 2, "#ffe59a");
     for (const l of g.loot) {
       if (l.kind === "crown") {
         rect(l.x - 4, l.y - 2, 9, 4, "#dc924e");
@@ -171,6 +173,11 @@ export function paint(ctx, g, t) {
         rect(x - 8, y + 12, Math.ceil((16 * e.hp) / 5), 1, "#efbd7d");
       } else bug(e.x, e.y, "#d57459");
     }
+  }
+  if (g.ally) {
+    bug(g.ally.x, g.ally.y, "#89d0ca");
+    rect(g.ally.x - 2, g.ally.y - 12, 5, 1, "#cef4e9");
+    rect(g.ally.x, g.ally.y - 11, 1, 2, "#cef4e9");
   }
   bug(px, py, "#edc76c");
   rect(px + 5, py, 2, 3, "#fff0a1");

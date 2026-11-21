@@ -8,6 +8,9 @@ const assets = new Set([
   "main.js",
   "art.js",
   "game.js",
+  "coop.js",
+  "network.js",
+  "pairing.js",
   "sw.js",
   "manifest.webmanifest",
   ...["beetle-192.png", "beetle-512.png", "beetle-maskable-512.png"].map(

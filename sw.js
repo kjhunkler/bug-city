@@ -6,6 +6,9 @@ const SHELL = [
   "./main.js",
   "./art.js",
   "./game.js",
+  "./coop.js",
+  "./network.js",
+  "./pairing.js",
   "./manifest.webmanifest",
   "./public/icons/beetle-192.png",
   "./public/icons/beetle-512.png",
@@ -26,16 +29,25 @@ self.addEventListener("activate", (event) => {
       .keys()
       .then((keys) =>
         Promise.all(
-          keys.filter((key) => key.startsWith("bug-city-shell-") && key !== CACHE).map((key) => caches.delete(key)),
+          keys
+            .filter((key) => key.startsWith("bug-city-shell-") && key !== CACHE)
+            .map((key) => caches.delete(key)),
         ),
       )
       .then(() => self.clients.claim()),
   );
 });
-const urls = new Set(SHELL.map(path => new URL(path, self.registration.scope).href));
-self.addEventListener("fetch", event => {
+const urls = new Set(
+  SHELL.map((path) => new URL(path, self.registration.scope).href),
+);
+self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET" || !urls.has(event.request.url)) return;
-  event.respondWith(caches.open(CACHE).then(async cache =>
-    (await cache.match(event.request)) || fetch(event.request)
-  ));
+  event.respondWith(
+    caches
+      .open(CACHE)
+      .then(
+        async (cache) =>
+          (await cache.match(event.request)) || fetch(event.request),
+      ),
+  );
 });

@@ -96,3 +96,22 @@ test("extraction banks each player's own loot and next expedition waits for both
   assert.equal(guest.stash, 2);
   assert.equal(host.enemies, guest.enemies);
 });
+
+test("shared enemy windup advances once per tick and can hit both players", () => {
+  const party = createParty();
+  const [host, guest] = party.players;
+  const stag = host.enemies.find((enemy) => enemy.kind === "stag");
+  Object.assign(host.player, { x: stag.x, y: stag.y });
+  Object.assign(guest.player, { x: stag.x, y: stag.y + 10 });
+  stag.windup = 0.15;
+
+  updateParty(party, 0.1);
+  assert.ok(stag.windup > 0);
+  assert.equal(host.player.hp, 5);
+  assert.equal(guest.player.hp, 5);
+
+  updateParty(party, 0.1);
+  assert.equal(stag.windup, 0);
+  assert.equal(host.player.hp, 3);
+  assert.equal(guest.player.hp, 3);
+});
