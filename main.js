@@ -6,7 +6,11 @@ const g = createGame(),
 const el = (id) => document.getElementById(id),
   keys = new Set();
 try {
-  g.stash = Math.max(0, Number(localStorage.getItem("bug-city-stash")) || 0);
+  const record = JSON.parse(localStorage.getItem("bug-city-colony")) || {};
+  const stash = record.stash ?? Number(localStorage.getItem("bug-city-stash"));
+  if (Number.isSafeInteger(stash) && stash >= 0) g.stash = stash;
+  if (Number.isSafeInteger(record.crowns) && record.crowns >= 0)
+    g.crowns = record.crowns;
 } catch {}
 let saved = g.stash,
   previous = performance.now(),
@@ -60,9 +64,14 @@ function frame(now) {
   set("hp", g.player.hp + " / 5");
   set("bag", g.carried + " salvage");
   set("stash", g.stash + " salvage");
+  el("trophy").hidden = !home || !g.crowns;
+  set("crowns", String(g.crowns));
   if (saved !== g.stash) {
     try {
-      localStorage.setItem("bug-city-stash", g.stash);
+      localStorage.setItem(
+        "bug-city-colony",
+        JSON.stringify({ stash: g.stash, crowns: g.crowns }),
+      );
     } catch {}
     saved = g.stash;
   }

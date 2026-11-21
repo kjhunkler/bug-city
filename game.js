@@ -53,7 +53,11 @@ function runState(g) {
 }
 
 function returnHome(g, message, bankCarried = false) {
-  if (bankCarried) g.stash += g.carried;
+  if (bankCarried) {
+    g.stash += g.carried;
+    if (g.carryingCrown) g.crowns++;
+  }
+  g.carryingCrown = false;
   const amount = g.carried;
   g.carried = 0;
   g.scene = "home";
@@ -75,6 +79,8 @@ export function createGame() {
     exit: null,
     carried: 0,
     stash: 0,
+    carryingCrown: false,
+    crowns: 0,
     message: "Colony safehouse. Press action to begin an expedition.",
     attackCooldown: 0,
     extracting: 0,
@@ -131,7 +137,11 @@ export function step(g, dt, dx = 0, dy = 0) {
       const item = g.loot.splice(i, 1)[0];
       const value = item.value || 1;
       g.carried += value;
-      g.message = `Salvage collected (+${value}). Get to extraction.`;
+      if (item.kind === "crown") g.carryingCrown = true;
+      g.message =
+        item.kind === "crown"
+          ? "Crown recovered. Extract to display it in Lantern Hollow."
+          : `Salvage collected (+${value}). Get to extraction.`;
     }
   }
 

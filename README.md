@@ -2,6 +2,8 @@
 
 Bug City is a mobile-first cooperative extraction game in development. The first playable build is a solo scavenging expedition. Walk through Lantern Hollow, venture into the Rustway, collect salvage, and activate the eastern beacon to bring it home. Defeat costs the contents of your backpack. Your secured stash is saved in the current browser. Refreshing abandons the active run.
 
+[Play Bug City on GitHub Pages](https://kjhunkler.github.io/bug-city/). The optional Copper Stag guards the northeast grove. Bring its crown home to display it in Lantern Hollow.
+
 ## Play locally
 
 With Node.js 22 or newer, run `npm start` and open http://localhost:4173. There are no package dependencies. Run `npm test` for simulation checks.

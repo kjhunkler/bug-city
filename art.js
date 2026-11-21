@@ -112,6 +112,13 @@ export function paint(ctx, g, t) {
     rect(x - 3, y - 8, 1, 2, "#d1bc88");
     rect(x + 3, y - 8, 1, 2, "#d1bc88");
   }
+  if (home && g.crowns > 0) {
+    oval(112, 94, 10, 3, "#353c2d");
+    rect(105, 86, 14, 7, "#81785c");
+    rect(103, 85, 18, 2, "#b5a780");
+    rect(107, 80, 10, 5, "#bf8248");
+    for (const x of [107, 111, 116]) rect(x, 76, 2, 6, "#f3ca83");
+  }
   if (!home) {
     oval(g.exit.x, g.exit.y, 9, 4, "#9bbe93");
     oval(g.exit.x, g.exit.y, 6, 2, "#415e51");

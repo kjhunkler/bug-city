@@ -136,3 +136,25 @@ test("Copper Stag is an optional lair boss with a dangerous telegraph and crown 
   step(g, 0.01);
   assert.equal(g.carried, crown.value);
 });
+
+test("a crown enters the colony display only after extraction", () => {
+  const g = createGame();
+  act(g);
+  g.enemies = [];
+  g.loot = [{ ...g.player, kind: "crown", value: 10 }];
+  step(g, 0.1);
+  assert.equal(g.crowns, 0);
+  Object.assign(g.player, g.exit);
+  act(g);
+  for (let i = 0; i < 31; i++) step(g, 0.1);
+  assert.equal(g.crowns, 1);
+  assert.equal(g.stash, 10);
+  act(g);
+  g.carryingCrown = true;
+  g.player.hp = 1;
+  Object.assign(g.enemies[0], g.player, { windup: 0.01 });
+  step(g, 0.1);
+  assert.equal(g.scene, "home");
+  assert.equal(g.carryingCrown, false);
+  assert.equal(g.crowns, 1);
+});
