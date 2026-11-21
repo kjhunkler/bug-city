@@ -1,268 +1,214 @@
-import { createGame, step, act, attack } from "./game.js";
-import { paint } from "./art.js";
-import { createParty, updateParty, viewParty } from "./coop.js";
-import { openPairing } from "./pairing.js";
-const solo = createGame();
-let g = solo;
-const canvas = document.querySelector("canvas"),
-  ctx = canvas.getContext("2d");
-const el = (id) => document.getElementById(id),
-  keys = new Set();
-try {
-  const record = JSON.parse(localStorage.getItem("bug-city-colony")) || {};
-  const stash = record.stash ?? Number(localStorage.getItem("bug-city-stash"));
-  if (Number.isSafeInteger(stash) && stash >= 0) g.stash = stash;
-  if (Number.isSafeInteger(record.crowns) && record.crowns >= 0)
-    g.crowns = record.crowns;
-} catch {}
-let saved = g.stash,
-  previous = performance.now(),
-  stick = null,
-  aim = null,
-  sx = 0,
-  sy = 0;
-let session = null;
-let queued = {};
-let peerInput = {};
-let sentAt = 0;
-let receivedAt = 0;
-el("partyButton").onclick = () => {
-  if (session) {
-    session.link.close();
-    endSession("Co-op ended. Returned to your solo colony.");
-    return;
+import { createWorld, addPlayer, stepWorld, movePlayer } from "./meadow.js";
+import { drawJar, paint } from "./art.js";
+import { connectGarden } from "./garden-net.js";
+import { connectPages } from "./pages-net.js";
+
+const canvas = document.querySelector("#meadow"),
+  ctx = canvas.getContext("2d", { alpha: false });
+const stick = document.querySelector("#stick"),
+  knob = document.querySelector("#knob");
+const count = document.querySelector("#count"),
+  friends = document.querySelector("#players"),
+  flash = document.querySelector("#catch");
+drawJar(document.querySelector("#jar").getContext("2d"));
+let myId = "local",
+  world = createWorld(crypto.getRandomValues(new Uint32Array(1))[0]);
+addPlayer(world, myId);
+let camera = { ...world.players[myId] },
+  remote = {},
+  online = false,
+  snapshotTime = 0,
+  priorCount = 0,
+  flashUntil = 0;
+const keys = new Set(),
+  axis = { turn: 0, forward: 0 };
+const angleDelta = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
+function receive(next, id) {
+  if (!next.players[id]) return;
+  const reset = id !== myId || next.seed !== world.seed;
+  if (reset) {
+    camera = { ...next.players[id] };
+    remote = {};
+    priorCount = next.caught;
   }
-  openPairing({
-    ready(link, host, lan) {
-      const party = host ? createParty() : null;
-      session = { link, party, host, lan, banked: 0, crowns: 0 };
-      queued = {};
-      peerInput = {};
-      receivedAt = performance.now();
-      sentAt = 0;
-      if (host) g = viewParty(party, 0);
-      set("partyButton", "Leave co-op");
-    },
-    receive(msg) {
-      if (!session || !msg || typeof msg !== "object") return;
-      if (session.host && msg.type === "input") {
-        const axis = (n) =>
-          Number.isFinite(n) ? Math.max(-1, Math.min(1, n)) : 0;
-        peerInput = {
-          dx: axis(msg.dx),
-          dy: axis(msg.dy),
-          attack: peerInput.attack || msg.attack === true,
-          action: peerInput.action || msg.action === true,
-          aimX: axis(msg.aimX),
-          aimY: axis(msg.aimY),
-        };
-        receivedAt = performance.now();
-      } else if (
-        !session.host &&
-        msg.type === "view" &&
-        ["run", "home"].includes(msg.state?.scene) &&
-        msg.state.player &&
-        Array.isArray(msg.state.enemies) &&
-        Array.isArray(msg.state.loot) &&
-        (msg.state.scene === "home" || msg.state.exit)
-      ) {
-        g = msg.state;
-      }
-    },
-    closed: endSession,
-    fullscreen,
-  });
+  world = next;
+  myId = id;
+  online = true;
+  snapshotTime = performance.now();
+}
+function status(value) {
+  document.body.classList.toggle(
+    "connected",
+    ["online", "hosting"].includes(value),
+  );
+  if (value === "offline" || value === "reconnecting") online = false;
+}
+const localServer = document.querySelector('meta[name="bug-city-garden"]');
+const connection = (localServer ? connectGarden : connectPages)({
+  onWorld: receive,
+  onStatus: status,
+});
+
+let pointer = null,
+  stickX = 0,
+  stickY = 0;
+function recalc() {
+  const keyboardX =
+    Number(keys.has("arrowright") || keys.has("d")) -
+    Number(keys.has("arrowleft") || keys.has("a"));
+  const keyboardY =
+    Number(keys.has("arrowdown") || keys.has("s")) -
+    Number(keys.has("arrowup") || keys.has("w"));
+  const x = keyboardX || stickX,
+    y = keyboardY || stickY,
+    length = Math.max(1, Math.hypot(x, y));
+  axis.turn = x / length;
+  axis.forward = -y / length;
+  knob.style.transform =
+    "translate(" + axis.turn * 54 + "%," + -axis.forward * 54 + "%)";
+  connection.input(axis);
+}
+function drag(e) {
+  const box = stick.getBoundingClientRect();
+  stickX = (e.clientX - box.left - box.width / 2) / (box.width * 0.38);
+  stickY = (e.clientY - box.top - box.height / 2) / (box.height * 0.38);
+  recalc();
+}
+stick.onpointerdown = (e) => {
+  if (pointer !== null) return;
+  pointer = e.pointerId;
+  stick.setPointerCapture(pointer);
+  drag(e);
 };
-function endSession(reason) {
-  session = null;
-  queued = {};
-  peerInput = {};
-  g = solo;
-  g.message = reason;
-  set("partyButton", "Play with a friend");
+stick.onpointermove = (e) => {
+  if (e.pointerId === pointer) drag(e);
+};
+function release() {
+  pointer = null;
+  stickX = stickY = 0;
+  recalc();
 }
-function strike(dx = 0, dy = 0) {
-  if (!dx && !dy) {
-    const closest = [...g.enemies].sort(
-      (a, b) =>
-        Math.hypot(a.x - g.player.x, a.y - g.player.y) -
-        Math.hypot(b.x - g.player.x, b.y - g.player.y),
-    )[0];
-    if (closest) {
-      dx = closest.x - g.player.x;
-      dy = closest.y - g.player.y;
-    }
-  }
-  if (session) {
-    const length = Math.hypot(dx, dy) || 1;
-    Object.assign(queued, {
-      attack: true,
-      aimX: dx / length,
-      aimY: dy / length,
-    });
-  } else attack(g, dx, dy);
-}
-function set(id, value) {
-  if (el(id).textContent !== value) el(id).textContent = value;
-}
-function frame(now) {
-  const dt = (now - previous) / 1000;
-  previous = now;
-  const dx =
-    sx +
-    Number(keys.has("d") || keys.has("arrowright")) -
-    Number(keys.has("a") || keys.has("arrowleft"));
-  const dy =
-    sy +
-    Number(keys.has("s") || keys.has("arrowdown")) -
-    Number(keys.has("w") || keys.has("arrowup"));
-  if (!session) step(g, dt, dx, dy);
-  else {
-    const input = { dx, dy, ...queued };
-    if (session.host) {
-      updateParty(session.party, dt, [
-        input,
-        now - receivedAt < 500 ? peerInput : {},
-      ]);
-      peerInput.attack = peerInput.action = false;
-      queued = {};
-      g = viewParty(session.party, 0);
-      if (now - sentAt >= 50) {
-        session.link.send({ type: "view", state: viewParty(session.party, 1) });
-        sentAt = now;
-      }
-    } else if (now - sentAt >= 50 || queued.attack || queued.action) {
-      if (session.link.send({ type: "input", ...input })) queued = {};
-      sentAt = now;
-    }
-  }
-  paint(ctx, g, now / 1000);
-  const home = g.scene === "home";
-  set("place", home ? "Lantern Hollow" : "The Rustway");
-  set("sector", home ? "COLONY" : "EXPEDITION");
-  set(
-    "safe",
-    session
-      ? "●  Co-op · " + (session.lan ? "LAN" : session.host ? "Host" : "Guest")
-      : home
-        ? "●  Safe zone"
-        : "◆  Hostile zone",
-  );
-  set(
-    "brief",
-    home
-      ? "Venture beyond the colony, gather salvage, and reach the eastern beacon to bring it home."
-      : "Extract at the eastern beacon. For a richer haul, seek the Copper Stag in the northeast grove.",
-  );
-  document.body.classList.toggle("expedition", !home);
-  const distance = home
-    ? 0
-    : Math.hypot(g.player.x - g.exit.x, g.player.y - g.exit.y);
-  const waiting = Boolean(home && session && !g.ally);
-  el("action").disabled =
-    waiting || (!home && (distance > 14 || g.extracting > 0));
-  set(
-    "action",
-    home
-      ? waiting
-        ? "Waiting for partner"
-        : "Enter expedition  →"
-      : g.extracting > 0
-        ? "Hold position · " + g.extracting.toFixed(1) + "s"
-        : distance <= 14
-          ? "Extract now  [E]"
-          : "Reach EXIT · " + Math.ceil(distance) + " px",
-  );
-  set("log", g.message);
-  set("hp", g.player.hp + " / 5");
-  set("bag", g.carried + " salvage");
-  set("stash", g.stash + " salvage");
-  el("trophy").hidden = !home || !g.crowns;
-  set("crowns", String(g.crowns));
-  if (
-    session &&
-    g !== solo &&
-    g.scene === "home" &&
-    Number.isSafeInteger(g.stash) &&
-    g.stash > session.banked
-  ) {
-    solo.stash += g.stash - session.banked;
-    session.banked = g.stash;
-    if (Number.isSafeInteger(g.crowns) && g.crowns > session.crowns) {
-      solo.crowns += g.crowns - session.crowns;
-      session.crowns = g.crowns;
-    }
-  }
-  if (saved !== solo.stash) {
-    try {
-      localStorage.setItem(
-        "bug-city-colony",
-        JSON.stringify({ stash: solo.stash, crowns: solo.crowns }),
-      );
-    } catch {}
-    saved = solo.stash;
-  }
-  requestAnimationFrame(frame);
-}
+stick.onlostpointercapture = release;
+stick.onpointercancel = release;
+stick.onpointerup = (e) => {
+  if (e.pointerId === pointer) release();
+};
 function fullscreen() {
   if (!document.fullscreenElement)
-    document.documentElement.requestFullscreen?.().catch(() => {});
+    document.documentElement
+      .requestFullscreen?.({ navigationUI: "hide" })
+      .catch(() => {});
 }
-function interact() {
-  if (g.scene === "home") fullscreen();
-  if (session) queued.action = true;
-  else act(g);
-}
-el("action").onclick = interact;
-window.onkeydown = (e) => {
-  if (el("partyDialog").open) return;
-  const k = e.key.toLowerCase();
-  if (k === " " && e.target.tagName === "BUTTON") return;
-  if ([" ", "arrowup", "arrowdown", "arrowright", "arrowleft"].includes(k))
-    e.preventDefault();
-  keys.add(k);
-  if (!e.repeat && k === "e") interact();
-  if (k === " ") strike();
+document.addEventListener("pointerdown", fullscreen, { capture: true });
+const accepted = new Set([
+  "arrowup",
+  "arrowdown",
+  "arrowleft",
+  "arrowright",
+  "w",
+  "a",
+  "s",
+  "d",
+]);
+document.onkeydown = (e) => {
+  const key = e.key.toLowerCase();
+  if (!accepted.has(key)) return;
+  e.preventDefault();
+  if (!e.repeat) {
+    fullscreen();
+    keys.add(key);
+    recalc();
+  }
 };
-window.onkeyup = (e) => keys.delete(e.key.toLowerCase());
-function drag(node, move) {
-  node.onpointerdown = (e) => {
-    node.setPointerCapture(e.pointerId);
-    if (move) stick = e;
-    else aim = e;
-  };
-  node.onpointermove = (e) => {
-    if (move && stick?.pointerId === e.pointerId) {
-      sx = (e.clientX - stick.clientX) / 22;
-      sy = (e.clientY - stick.clientY) / 22;
-    }
-  };
-  node.onpointerup = (e) => {
-    if (move) {
-      sx = sy = 0;
-      stick = null;
-    } else if (aim) {
-      let x = e.clientX - aim.clientX,
-        y = e.clientY - aim.clientY;
-      Math.hypot(x, y) < 6 ? strike() : strike(x, y);
-      aim = null;
-    }
-  };
-  node.onpointercancel = () => {
-    if (move) {
-      sx = sy = 0;
-      stick = null;
-    } else aim = null;
-  };
-}
-drag(el("stick"), true);
-drag(el("strike"), false);
-drag(canvas, false);
+document.onkeyup = (e) => {
+  if (keys.delete(e.key.toLowerCase())) recalc();
+};
 window.onblur = () => {
   keys.clear();
-  sx = sy = 0;
-  stick = aim = null;
+  release();
 };
+document.oncontextmenu = document.ondblclick = (e) => e.preventDefault();
+for (const event of [
+  "gesturestart",
+  "gesturechange",
+  "gestureend",
+  "selectstart",
+  "dragstart",
+])
+  document.addEventListener(event, (e) => e.preventDefault(), {
+    passive: false,
+  });
+document.addEventListener("touchmove", (e) => e.preventDefault(), {
+  passive: false,
+});
+document.addEventListener("wheel", (e) => e.preventDefault(), {
+  passive: false,
+});
+function resize() {
+  const w = canvas.clientWidth,
+    h = canvas.clientHeight;
+  const scale = Math.max(1, Math.min(w, h) / 205, Math.max(w, h) / 550);
+  canvas.width = Math.round(w / scale);
+  canvas.height = Math.round(h / scale);
+}
+new ResizeObserver(resize).observe(canvas);
+resize();
+let previous = performance.now();
+function frame(now) {
+  const dt = Math.min(0.08, (now - previous) / 1000);
+  previous = now;
+  if (!online) {
+    // A personal meadow is playable immediately, including while signaling is unavailable.
+    // Detach from the last network-owned object before advancing an offline frame.
+    if (snapshotTime) {
+      world = structuredClone(world);
+      snapshotTime = 0;
+    }
+    stepWorld(world, dt, { [myId]: axis });
+  }
+  const player = world.players[myId];
+  if (player) {
+    movePlayer(camera, dt, axis);
+    const target = { ...player };
+    if (online)
+      movePlayer(target, Math.min(0.1, (now - snapshotTime) / 1000), axis);
+    const blend = 1 - Math.exp(-12 * dt);
+    camera.x += (target.x - camera.x) * blend;
+    camera.y += (target.y - camera.y) * blend;
+    camera.angle += angleDelta(target.angle, camera.angle) * blend;
+    for (const [id, other] of Object.entries(world.players)) {
+      if (id === myId) continue;
+      const pose = (remote[id] ??= { ...other });
+      pose.x += (other.x - pose.x) * blend;
+      pose.y += (other.y - pose.y) * blend;
+      pose.angle += angleDelta(other.angle, pose.angle) * blend;
+    }
+    for (const id of Object.keys(remote))
+      if (!world.players[id]) delete remote[id];
+    paint(
+      ctx,
+      { ...world, players: { ...remote, [myId]: camera } },
+      myId,
+      camera,
+      now / 1000,
+      Math.abs(axis.forward) > 0.1,
+    );
+  }
+  if (world.caught > priorCount) {
+    flash.textContent = "✦ +" + (world.caught - priorCount) + " ✦";
+    flashUntil = now + 850;
+  }
+  priorCount = world.caught;
+  if (now > flashUntil && flash.textContent) flash.textContent = "";
+  if (count.textContent !== String(world.caught))
+    count.textContent = String(world.caught);
+  const total = String(Object.keys(world.players).length);
+  if (friends.textContent !== total) friends.textContent = total;
+  requestAnimationFrame(frame);
+}
 requestAnimationFrame(frame);
+window.addEventListener("pagehide", (e) => {
+  if (!e.persisted) connection.close();
+});
 if ("serviceWorker" in navigator)
   navigator.serviceWorker.register("./sw.js").catch(() => {});

@@ -23,9 +23,10 @@ jobs:
       - run: npm test
       - run: |
           mkdir -p dist/public
-          cp index.html style.css main.js art.js game.js network.js coop.js pairing.js lan.js sw.js manifest.webmanifest dist/
+          cp index.html style.css main.js art.js meadow.js garden-net.js pages-net.js sw.js manifest.webmanifest dist/
           sed -i "s/bug-city-shell-v1/bug-city-shell-$GITHUB_SHA/" dist/sw.js
           cp -r public/icons dist/public/
+          cp -r vendor dist/
       - uses: actions/upload-pages-artifact@v5
         with:
           path: dist

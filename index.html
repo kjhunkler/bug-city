@@ -4,98 +4,49 @@
     <meta charset="utf-8" />
     <meta
       name="viewport"
-      content="width=device-width,initial-scale=1,viewport-fit=cover"
+      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"
     />
-    <meta name="theme-color" content="#20281f" />
-    <title>Bug City · Colony Outpost</title>
+    <meta name="theme-color" content="#29443b" />
+    <title>Bug City · Pocket Meadow</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="public/icons/beetle-192.png" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <header>
-      <div class="brand">
-        <img src="public/icons/beetle-192.png" alt="" /> Bug City
-      </div>
-      <button id="partyButton">Play with a friend</button>
-    </header>
-    <main>
-      <section class="title">
-        <div>
-          <small>FIELD STATION &nbsp;/&nbsp; <b id="sector">COLONY</b></small>
-          <h1 id="place">Lantern Hollow</h1>
+    <main aria-label="Bug City multiplayer meadow">
+      <canvas
+        id="meadow"
+        aria-label="Bug-catching meadow. Push the stick forward to walk and sideways to turn. Arrow keys also work."
+      ></canvas>
+      <header>
+        <div class="titleplate">
+          <span class="rivets" aria-hidden="true"></span>
+          <h1>BUG CITY</h1>
         </div>
-        <span id="safe">● &nbsp; Safe zone</span>
-      </section>
-      <div class="layout">
-        <section class="field">
-          <canvas
-            width="320"
-            height="180"
-            aria-label="Playable field. Move with WASD or arrows. Space attacks. E interacts."
-          ></canvas>
-          <div class="controls">
-            <span><kbd>WASD</kbd> Move</span><span><kbd>SPACE</kbd> Strike</span
-            ><span><kbd>E</kbd> Interact</span>
-          </div>
-          <div class="touch">
-            <button id="stick" aria-label="Drag to move">✥</button
-            ><button id="strike">Strike</button>
-          </div>
-        </section>
-        <aside>
-          <small>FIELD JOURNAL</small>
-          <h2 id="mission">Salvage run</h2>
-          <p id="brief">
-            Venture beyond the colony, gather salvage, and reach the eastern
-            beacon to bring it home.
-          </p>
-          <dl>
-            <div>
-              <dt>Vitality</dt>
-              <dd id="hp"></dd>
-            </div>
-            <div>
-              <dt>Backpack</dt>
-              <dd id="bag"></dd>
-            </div>
-            <div>
-              <dt>Colony stash</dt>
-              <dd id="stash"></dd>
-            </div>
-            <div hidden id="trophy">
-              <dt>Stag crowns</dt>
-              <dd id="crowns"></dd>
-            </div>
-          </dl>
-          <button id="action">Enter expedition &nbsp; →</button>
-        </aside>
+        <div class="counter" aria-label="Bugs caught">
+          <canvas id="jar" width="18" height="20" aria-hidden="true"></canvas
+          ><strong id="count">0</strong>
+        </div>
+      </header>
+      <div id="catch" role="status"></div>
+      <div class="console">
+        <div class="soundholes" aria-hidden="true"></div>
+        <div
+          id="stick"
+          role="group"
+          tabindex="0"
+          aria-label="Movement stick. Up to walk, left and right to turn."
+        >
+          <i class="arrow up"></i><i class="arrow left"></i
+          ><i class="arrow right"></i><span id="knob"></span>
+        </div>
+        <div class="friends" aria-label="Players in the meadow">
+          <span id="light"></span><span id="players">1</span
+          ><span class="person" aria-hidden="true"></span>
+        </div>
       </div>
-      <footer>
-        <small>FIELD LOG</small><span id="log" role="status"></span>
-      </footer>
     </main>
-    <dialog id="partyDialog">
-      <h2>Two-player expedition</h2>
-      <p id="pairHelp">
-        One player hosts. Exchange the connection codes privately with your
-        friend. Keep both games open during the run.
-      </p>
-      <div class="pairActions">
-        <button id="host">Host a run</button
-        ><button id="join">Join a host</button>
-      </div>
-      <label id="outLabel" hidden
-        >Your code<textarea id="outCode" readonly></textarea
-        ><button id="copy">Copy code</button></label
-      >
-      <label id="inLabel" hidden
-        >Friend’s code<textarea id="inCode" spellcheck="false"></textarea>
-      </label>
-      <button hidden id="connect">Connect</button>
-      <p id="pairStatus" role="status"></p>
-      <button id="dismiss">Close</button>
-    </dialog>
+    <script src="vendor/peerjs.min.js"></script>
     <script type="module" src="main.js"></script>
   </body>
 </html>
