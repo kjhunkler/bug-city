@@ -69,11 +69,9 @@ function writeEvent(seat, status, state, now) {
 }
 
 function consumeInput(seat, now) {
-  const input = seat.input;
-  seat.input = now - seat.inputAt <= INPUT_STALE_MS
-    ? { dx: input.dx, dy: input.dy }
-    : {};
-  return now - seat.inputAt <= INPUT_STALE_MS ? input : {};
+  const input = now - seat.inputAt <= INPUT_STALE_MS ? seat.input : {};
+  seat.input = { dx: input.dx, dy: input.dy };
+  return input;
 }
 
 function updateInput(seat, input, now) {
@@ -188,7 +186,7 @@ export function createLanRouter({
         if (seat.stream !== res) return;
         seat.stream = null;
         seat.disconnectedAt = Date.now();
-        seat.input = {};
+        for (const candidate of room.seats) candidate.input = {};
         if (rooms.has(room.code)) refresh(room, seat.disconnectedAt);
       });
       res.writeHead(200, {
@@ -200,9 +198,10 @@ export function createLanRouter({
       return;
     }
     if (endpoint === "input" && req.method === "POST") {
+      const stream = seat.stream;
       const body = await readJson(req);
-      if (!rooms.has(room.code)) throw new RequestError(404, "LAN room has closed.");
-      if (room.party && room.seats.every((candidate) => candidate.stream)) {
+      if (rooms.get(room.code) !== room) throw new RequestError(404, "LAN room has closed.");
+      if (stream === seat.stream && room.party && room.seats.every((candidate) => candidate.stream)) {
         updateInput(seat, body, Date.now());
       }
       return res.writeHead(204).end();
