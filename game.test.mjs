@@ -9,7 +9,7 @@ test("starts at home and starts a fresh run while preserving stash", () => {
   assert.equal(g.scene, "run");
   assert.equal(g.stash, 7);
   assert.equal(g.player.hp, 5);
-  assert.equal(g.enemies.length, 2);
+  assert.equal(g.enemies.filter((enemy) => enemy.kind !== "stag").length, 2);
 });
 
 test("movement works at home and in a run, normalized and bounded", () => {
@@ -99,4 +99,40 @@ test("death drops carried salvage and restores a recovery kit", () => {
   assert.equal(g.carried, 0);
   assert.equal(g.stash, 0);
   assert.equal(g.player.hp, 5);
+});
+
+test("Copper Stag is an optional lair boss with a dangerous telegraph and crown reward", () => {
+  const g = createGame();
+  act(g);
+  const stag = g.enemies.find((enemy) => enemy.kind === "stag");
+  assert.ok(stag);
+  assert.ok(stag.hp >= 4);
+  assert.deepEqual(stag.lair, { x: 276, y: 34 });
+
+  g.player.x = stag.x - 32;
+  g.player.y = stag.y;
+  step(g, 0.1);
+  assert.ok(
+    stag.windup >= 1.0,
+    "stag should have a longer windup than ordinary bugs",
+  );
+  assert.match(g.message, /antlers|charge/i);
+  const hp = g.player.hp;
+  step(g, 0.1, 0, 1);
+  assert.equal(g.player.hp, hp, "player can evade the telegraphed charge");
+
+  g.player.x = stag.x - 10;
+  g.player.y = stag.y;
+  for (let i = 0; i < 5; i++) {
+    g.attackCooldown = 0;
+    attack(g, 1, 0);
+  }
+  assert.equal(g.enemies.includes(stag), false);
+  const crown = g.loot.find((item) => item.kind === "crown");
+  assert.ok(crown);
+  assert.ok(crown.value > 2);
+  g.player.x = crown.x;
+  g.player.y = crown.y;
+  step(g, 0.01);
+  assert.equal(g.carried, crown.value);
 });

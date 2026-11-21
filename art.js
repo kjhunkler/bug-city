@@ -116,6 +116,13 @@ export function paint(ctx, g, t) {
     oval(g.exit.x, g.exit.y, 9, 4, "#9bbe93");
     oval(g.exit.x, g.exit.y, 6, 2, "#415e51");
     for (const l of g.loot) {
+      if (l.kind === "crown") {
+        rect(l.x - 4, l.y - 2, 9, 4, "#dc924e");
+        for (const offset of [-4, 0, 4])
+          rect(l.x + offset, l.y - 5, 1, 4, "#ffe5a2");
+        rect(l.x - 3, l.y, 7, 1, "#f6c575");
+        continue;
+      }
       rect(l.x - 2, l.y - 2, 4, 4, "#efc873");
       rect(l.x, l.y - 3, 2, 2, "#fff1b5");
     }
@@ -123,10 +130,31 @@ export function paint(ctx, g, t) {
       if (e.windup > 0) {
         ctx.strokeStyle = "#ffb172";
         ctx.beginPath();
-        ctx.arc(e.x, e.y, 12, 0, 7);
+        ctx.arc(e.x, e.y, e.kind === "stag" ? 34 : 25, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(225, 120, 65, 0.12)";
+        ctx.fill();
         ctx.stroke();
       }
-      bug(e.x, e.y, "#d57459");
+      if (e.kind === "stag") {
+        const { x, y } = e;
+        oval(x + 1, y + 5, 12, 3, "#292b25");
+        for (const side of [-1, 1]) {
+          for (const dy of [-4, 1, 6])
+            rect(x + side * 8 - 2, y + dy, 5, 2, "#221f1e");
+          rect(x + side * 5 - 1, y - 14, 3, 8, "#e4ab67");
+          rect(x + side * 7 - 1, y - 16, 2, 5, "#dba064");
+          rect(x + side * 4 - 1, y - 14, 3, 2, "#f5c78c");
+        }
+        oval(x, y, 8, 9, "#573d33");
+        oval(x - 1, y, 6, 8, "#ab613e");
+        rect(x - 4, y - 4, 2, 6, "#d29154");
+        rect(x, y - 5, 1, 12, "#614132");
+        rect(x - 4, y - 9, 9, 4, "#494138");
+        rect(x - 4, y - 8, 2, 1, "#ffe395");
+        rect(x + 3, y - 8, 2, 1, "#ffe395");
+        rect(x - 8, y + 12, 16, 2, "#292922");
+        rect(x - 8, y + 12, Math.ceil((16 * e.hp) / 5), 1, "#efbd7d");
+      } else bug(e.x, e.y, "#d57459");
     }
   }
   bug(px, py, "#edc76c");

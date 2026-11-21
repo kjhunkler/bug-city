@@ -49,6 +49,12 @@ function frame(now) {
   set("place", home ? "Lantern Hollow" : "The Rustway");
   set("sector", home ? "COLONY" : "EXPEDITION");
   set("safe", home ? "●  Safe zone" : "◆  Hostile zone");
+  set(
+    "brief",
+    home
+      ? "Venture beyond the colony, gather salvage, and reach the eastern beacon to bring it home."
+      : "Extract at the eastern beacon. For a richer haul, seek the Copper Stag in the northeast grove.",
+  );
   set("action", home ? "Enter expedition  →" : "Activate beacon");
   set("log", g.message);
   set("hp", g.player.hp + " / 5");

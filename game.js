@@ -27,6 +27,16 @@ function runState(g) {
     enemies: [
       { ...pos(), hp: 2, windup: 0, attackCooldown: 0 },
       { ...pos(), hp: 2, windup: 0, attackCooldown: 0 },
+      // The stag stays near its lair unless a player approaches, so it can be skipped.
+      {
+        kind: "stag",
+        hp: 5,
+        x: 276,
+        y: 34,
+        lair: { x: 276, y: 34 },
+        windup: 0,
+        attackCooldown: 0,
+      },
     ],
     loot: [
       { ...pos(), value: 2 },
@@ -128,12 +138,15 @@ export function step(g, dt, dx = 0, dy = 0) {
   for (const enemy of g.enemies) {
     enemy.attackCooldown = Math.max(0, (enemy.attackCooldown || 0) - dt);
     const d = distance(g.player, enemy);
+    const isStag = enemy.kind === "stag";
     if (enemy.windup > 0) {
       enemy.windup = Math.max(0, enemy.windup - dt);
       if (enemy.windup === 0) {
-        if (distance(g.player, enemy) <= 25) {
-          g.player.hp -= 1;
-          g.message = "A bug struck you! Move away during its windup.";
+        if (distance(g.player, enemy) <= (isStag ? 34 : 25)) {
+          g.player.hp -= isStag ? 2 : 1;
+          g.message = isStag
+            ? "The Copper Stag crashes through the grove!"
+            : "A bug struck you! Move away during its windup.";
           if (g.player.hp <= 0) {
             returnHome(
               g,
@@ -143,6 +156,27 @@ export function step(g, dt, dx = 0, dy = 0) {
           }
         }
         enemy.attackCooldown = 0.8;
+      }
+    } else if (isStag) {
+      const lair = enemy.lair;
+      const fromLair = distance(enemy, lair);
+      if (d <= 36 && enemy.attackCooldown <= 0) {
+        enemy.windup = 1.2;
+        g.message =
+          "The Copper Stag lowers its antlers! Evade the heavy charge.";
+      } else if (d <= 92 && d > 30) {
+        // Aggro is limited to the grove; never let the boss chase out of its lair.
+        const nextX = enemy.x + ((g.player.x - enemy.x) / d) * 12 * dt;
+        const nextY = enemy.y + ((g.player.y - enemy.y) / d) * 12 * dt;
+        if (Math.hypot(nextX - lair.x, nextY - lair.y) <= 58) {
+          enemy.x = clamp(nextX, 8, WIDTH - 8);
+          enemy.y = clamp(nextY, 8, HEIGHT - 8);
+        }
+      } else if (d > 92 && fromLair > 1) {
+        enemy.x +=
+          ((lair.x - enemy.x) / fromLair) * Math.min(12 * dt, fromLair);
+        enemy.y +=
+          ((lair.y - enemy.y) / fromLair) * Math.min(12 * dt, fromLair);
       }
     } else if (d <= 24 && enemy.attackCooldown <= 0) {
       enemy.windup = 0.65;
@@ -198,10 +232,15 @@ export function attack(g, dx = 0, dy = 0) {
     target.hp -= 1;
     if (target.hp <= 0) {
       g.enemies.splice(g.enemies.indexOf(target), 1);
-      g.loot.push({ x: target.x, y: target.y, value: 2 });
-      g.message = "Bug defeated. Salvage dropped.";
+      if (target.kind === "stag") {
+        g.loot.push({ x: target.x, y: target.y, value: 10, kind: "crown" });
+        g.message = "Copper Stag defeated! Its crown is yours.";
+      } else {
+        g.loot.push({ x: target.x, y: target.y, value: 2 });
+        g.message = "Bug defeated. Salvage dropped.";
+      }
     } else {
-      target.windup = 0;
+      if (target.kind !== "stag") target.windup = 0;
       target.attackCooldown = Math.max(target.attackCooldown || 0, 0.25);
       g.message = "Hit! Keep moving when a bug winds up.";
     }
