@@ -1,5 +1,5 @@
-import { createWorld, addPlayer, stepWorld, movePlayer } from "./meadow.js";
-import { drawJar, paint } from "./art.js";
+import { createWorld, addPlayer, stepWorld, movePlayer, inReach, BUG_KINDS, FISH_ACTION } from "./meadow.js";
+import { drawJar, drawBug, paint } from "./art.js";
 import { connectGarden } from "./garden-net.js";
 import { connectPages } from "./pages-net.js";
 
@@ -19,6 +19,7 @@ let camera = { ...world.players[myId] },
   online = false,
   snapshotTime = 0,
   priorCount = 0,
+  priorFish = 0,
   flashUntil = 0;
 let targets = [];
 const swings = Object.create(null),
@@ -35,6 +36,7 @@ function receive(next, id) {
     axis.targetBug = 0;
     seenSwings.clear();
     priorCount = next.caught;
+    priorFish = next.fish;
   }
   world = next;
   myId = id;
@@ -98,6 +100,41 @@ function release() {
   stickX = stickY = 0;
   recalc();
 }
+const jar = document.querySelector("#collection");
+const glass = document.querySelector("#glass").getContext("2d");
+const label = document.querySelector("#jar-label");
+const prev = document.querySelector("#prev"), next = document.querySelector("#next");
+const perPage = 24;
+let page = 0;
+document.querySelector(".counter").onclick = () => {
+  keys.clear();
+  release();
+  page = 0;
+  jar.showModal();
+};
+document.querySelector("#close-jar").onclick = () => jar.close();
+prev.onclick = () => page--;
+next.onclick = () => page++;
+function showCollection(time) {
+  page = Math.max(0, Math.min(page, Math.ceil(world.caught / perPage) - 1));
+  const start = page * perPage, end = Math.min(start + perPage, world.caught);
+  glass.clearRect(0, 0, glass.canvas.width, glass.canvas.height);
+  let offset = 0;
+  for (const kind of BUG_KINDS) {
+    const stop = offset + world.collection[kind];
+    for (let i = Math.max(start, offset); i < Math.min(end, stop); i++) {
+      const t = time * 0.7 + i * 2.4, j = i - start;
+      drawBug(glass, 15 + (j % 6) * 30 + Math.cos(t) * 7,
+        15 + Math.floor(j / 6) * 27 + Math.sin(t * 1.3) * 7, kind, t);
+    }
+    offset = stop;
+  }
+  const text = world.caught ? `${start + 1}–${end} of ${world.caught} bugs` : "No bugs yet";
+  const summary = `${text} · ${world.fish} fish caught`;
+  if (label.textContent !== summary) label.textContent = summary;
+  prev.disabled = page === 0;
+  next.disabled = end === world.caught;
+}
 stick.onlostpointercapture = release;
 stick.onpointercancel = release;
 stick.onpointerup = (e) => {
@@ -120,9 +157,14 @@ canvas.onpointerdown = (e) => {
     }
   }
   if (!nearest) return;
-  swings[myId] = {
-    x: nearest.bug.x,
-    y: nearest.bug.y,
+  if (!inReach(world.players[myId], nearest.point)) {
+    flash.textContent = "Walk closer!";
+    flashUntil = performance.now() + 900;
+    return;
+  }
+  if (nearest.id !== FISH_ACTION) swings[myId] = {
+    x: nearest.point.x,
+    y: nearest.point.y,
     start: performance.now() / 1000,
   };
   axis.targetBug = nearest.id;
@@ -147,6 +189,7 @@ const accepted = new Set([
   "d",
 ]);
 document.onkeydown = (e) => {
+  if (jar.open) return;
   const key = e.key.toLowerCase();
   if (!accepted.has(key)) return;
   e.preventDefault();
@@ -238,7 +281,8 @@ function frame(now) {
       }
     targets = paint(
       ctx,
-      { ...world, players: { ...remote, [myId]: camera } },
+      { ...world, players: Object.fromEntries(Object.entries(world.players).map(([id, p]) =>
+        [id, { ...(id === myId ? camera : remote[id]), castUntil: p.castUntil }])) },
       myId,
       camera,
       now / 1000,
@@ -251,6 +295,12 @@ function frame(now) {
     flashUntil = now + 850;
   }
   priorCount = world.caught;
+  if (world.fish > priorFish) {
+    flash.textContent = "Caught a fish!";
+    flashUntil = now + 1300;
+  }
+  priorFish = world.fish;
+  if (jar.open) showCollection(now / 1000);
   if (now > flashUntil && flash.textContent) flash.textContent = "";
   if (count.textContent !== String(world.caught))
     count.textContent = String(world.caught);

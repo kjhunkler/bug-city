@@ -1,10 +1,11 @@
 import { createHash, randomBytes } from "node:crypto";
 import { addPlayer, createWorld, removePlayer } from "./meadow.js";
+import { validHabitat, isAction } from "./meadow.js";
 
 const API = "/api/garden/";
 const MAX_BODY = 128 * 1024;
 const TOKEN = /^[a-f0-9]{64}$/;
-const BUG_KINDS = new Set(["ladybug", "butterfly", "bee"]);
+const BUG_KINDS = new Set(["ladybug", "butterfly", "bee", "dragonfly", "firefly", "caterpillar"]);
 
 function coordinate(value) {
   return Number.isFinite(value) && Math.abs(value) <= Number.MAX_SAFE_INTEGER;
@@ -20,6 +21,7 @@ function snapshotMatches(world, previous) {
       coordinate(bug.x) && coordinate(bug.y) && BUG_KINDS.has(bug.kind)
     ) &&
     new Set(world.bugs.map((bug) => bug.id)).size === world.bugs.length &&
+    validHabitat(world) &&
     world.players && Object.keys(world.players).length === Object.keys(previous.players).length &&
     Object.keys(previous.players).every((id) => {
       const player = world.players[id];
@@ -147,7 +149,7 @@ export function createGardenRelay({
       if (peers.get(id) !== peer) {
         res.writeHead(409).end();
       } else if (action === "input" && Number.isFinite(body?.turn) && Number.isFinite(body.forward)) {
-        const hasTarget = Number.isSafeInteger(body.targetBug) && body.targetBug > 0;
+        const hasTarget = isAction(body.targetBug);
         const targetBug = hasTarget ? body.targetBug : peer.input.targetBug;
         const targetSequence = hasTarget && Number.isSafeInteger(body.targetSequence) && body.targetSequence > 0
           ? body.targetSequence

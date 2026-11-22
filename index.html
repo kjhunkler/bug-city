@@ -23,11 +23,21 @@
           <span class="rivets" aria-hidden="true"></span>
           <h1>BUG CITY</h1>
         </div>
-        <div class="counter" aria-label="Bugs caught">
+        <button class="counter" type="button" aria-label="Open the shared bug jar" aria-haspopup="dialog">
           <canvas id="jar" width="18" height="20" aria-hidden="true"></canvas
           ><strong id="count">0</strong>
-        </div>
+        </button>
       </header>
+      <dialog id="collection" aria-labelledby="jar-title">
+        <h2 id="jar-title">Our bug jar</h2>
+        <canvas id="glass" width="180" height="112" aria-label="Bugs crawling in the jar"></canvas>
+        <p id="jar-label"></p>
+        <div class="jar-controls">
+          <button id="prev" aria-label="Previous bugs">&larr;</button>
+          <button id="close-jar" autofocus>Back to meadow</button>
+          <button id="next" aria-label="Next bugs">&rarr;</button>
+        </div>
+      </dialog>
       <div id="catch" role="status"></div>
       <div class="console">
         <div class="soundholes" aria-hidden="true"></div>

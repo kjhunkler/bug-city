@@ -1,6 +1,7 @@
 import { addPlayer, createWorld, removePlayer, stepWorld } from "./meadow.js";
+import { validHabitat, isAction } from "./meadow.js";
 
-const PROTOCOL = "bug-city-meadow-v2";
+const PROTOCOL = "bug-city-meadow-v3";
 const FRAME_MS = 50;
 const HANDSHAKE_MS = 7000;
 const SILENCE_MS = 8000;
@@ -33,7 +34,7 @@ function boundedAxis(value) {
 }
 
 function updateInput(previous, next) {
-  const hasTarget = Number.isSafeInteger(next?.targetBug) && next.targetBug > 0;
+  const hasTarget = isAction(next?.targetBug);
   const targetBug = hasTarget ? next.targetBug : previous.targetBug;
   const targetSequence = hasTarget && Number.isSafeInteger(next.targetSequence) && next.targetSequence > 0
     ? next.targetSequence
@@ -69,7 +70,7 @@ function validSnapshot(message, myId) {
   if (
     !world?.players ||
     !Array.isArray(world.bugs) ||
-    world.bugs.length > MAX_BUGS
+    world.bugs.length > MAX_BUGS || !validHabitat(world)
   )
     return false;
   if (
@@ -93,7 +94,7 @@ function validSnapshot(message, myId) {
         Number.isSafeInteger(bug.id) &&
         boundedCoordinate(bug.x) &&
         boundedCoordinate(bug.y) &&
-        ["ladybug", "butterfly", "bee"].includes(bug.kind),
+        ["ladybug", "butterfly", "bee", "dragonfly", "firefly", "caterpillar"].includes(bug.kind),
     )
   );
 }

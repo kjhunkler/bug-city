@@ -1,4 +1,5 @@
 // A low-resolution meadow painted in world coordinates with upright sprite billboards.
+import { POND_SPACING, FISH_ACTION, pondAt, nearestPond, fishingSpot, inWater } from "./meadow.js";
 function hash(x, y, seed) {
   let h = Math.imul(x ^ seed, 374761393) + Math.imul(y, 668265263);
   h = Math.imul(h ^ (h >>> 13), 1274126177);
@@ -20,9 +21,7 @@ export function drawJar(ctx) {
   r(9, 9, 3, 1, "#675741");
   r(10, 11, 1, 2, "#5b513b");
 }
-export function paint(ctx, world, id, camera, time, walking, swings = {}) {
-  const w = ctx.canvas.width,
-    h = ctx.canvas.height;
+function brushes(ctx) {
   const r = (x, y, a, b, c) => {
     ctx.fillStyle = c;
     ctx.fillRect(Math.round(x), Math.round(y), a, b);
@@ -33,6 +32,11 @@ export function paint(ctx, world, id, camera, time, walking, swings = {}) {
       r(x - n, y + j, n * 2 + 1, 1, c);
     }
   }
+  return { r, oval };
+}
+export function paint(ctx, world, id, camera, time, walking, swings = {}) {
+  const w = ctx.canvas.width, h = ctx.canvas.height;
+  const { r, oval } = brushes(ctx);
   const c = Math.cos(camera.angle),
     s = Math.sin(camera.angle);
   function project(x, y) {
@@ -98,6 +102,54 @@ export function paint(ctx, world, id, camera, time, walking, swings = {}) {
     ctx.fill();
   }
   const objects = [];
+  const targets = [];
+  for (let iy = Math.floor((camera.y - radius) / POND_SPACING); iy <= Math.ceil((camera.y + radius) / POND_SPACING); iy++) {
+    for (let ix = Math.floor((camera.x - radius) / POND_SPACING); ix <= Math.ceil((camera.x + radius) / POND_SPACING); ix++) {
+      const pond = pondAt(ix, iy, world.seed);
+      const [px, py, zoom] = project(pond.x, pond.y);
+      if (px < -50 * zoom || px > w + 50 * zoom || py < horizon || py > h + 50 * zoom) continue;
+      for (const [rx, ry, color] of [[38, 24, "#aaa978"], [36, 22, "#80c4ba"], [29, 17, "#66aeb0"]]) {
+        ctx.beginPath();
+        for (let i = 0; i <= 32; i++) {
+          const a = i * Math.PI / 16;
+          const [x, y] = project(pond.x + rx * Math.cos(a), pond.y + ry * Math.sin(a));
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.fillStyle = color;
+        ctx.fill();
+      }
+      function sprite(dx, dy, draw) {
+        const [x, y, size] = project(pond.x + dx, pond.y + dy);
+        objects.push({ y, draw: () => atScale(x, y, size, () => draw(x, y)) });
+      }
+      const drift = Math.sin(time + ix);
+      sprite(4 + drift * 7, -8, (x, y) => {
+        oval(x, y, 4, 2, "#eaba72");
+        r(x - 6, y - 1, 2, 3, "#da8d5c"); r(x + 2, y - 1, 1, 1, "#4c604e");
+      });
+      sprite(-17, 4, (x, y) => {
+        oval(x, y, 6, 2, "#8ab973");
+        y -= Math.max(0, drift) * 3;
+        oval(x, y - 1, 4, 2, "#609958");
+        for (const dx of [-3, 1]) {
+          r(x + dx, y - 5, 2, 3, "#add07c"); r(x + dx, y - 5, 1, 1, "#354d3c");
+        }
+      });
+      sprite(19, 3 + drift * 2, (x, y) => {
+        r(x - 4, y + 2, 2, 2, "#659461"); r(x + 2, y + 2, 2, 2, "#659461");
+        oval(x + 5, y - 1, 2, 2, "#9ab478"); oval(x, y, 5, 3, "#587958");
+        r(x - 2, y - 2, 4, 2, "#849254");
+      });
+      const spot = fishingSpot(pond);
+      const [x, y, size] = project(spot.x, spot.y);
+      targets.push({ id: FISH_ACTION, point: spot, x, y: y - 2 * size, size });
+      sprite(0, 21, (x, y) => {
+        for (let i = -2; i <= 2; i++) r(x - 7, y + i * 2, 15, 2, i % 2 ? "#b38d60" : "#d5ad77");
+        r(x + 5, y - 10, 2, 13, "#795e46");
+        r(x + 7, y - 10, 6, 4, "#e78059");
+      });
+    }
+  }
   for (
     let iy = Math.floor((camera.y - radius) / 32);
     iy <= Math.ceil((camera.y + radius) / 32);
@@ -114,6 +166,7 @@ export function paint(ctx, world, id, camera, time, walking, swings = {}) {
       const [x, y, scale] = project(wx, wy);
       if (x < -18 || x > w + 18 || y < -15 || y > h + 28) continue;
       if (scale < 0.25 || scale > 3) continue;
+      if (inWater({ x: wx, y: wy }, nearestPond({ x: wx, y: wy }, world.seed))) continue;
       ctx.save();
       ctx.translate(x, y);
       ctx.scale(scale, scale);
@@ -166,31 +219,6 @@ export function paint(ctx, world, id, camera, time, walking, swings = {}) {
       r(dx, dy - 2, 1, 3, "#ffd46f");
     }
   }
-  function bug(x, y, b) {
-    const flap = Math.sin(time * 6 + b.x) > 0 ? 1 : 0;
-    oval(x, y + 3, 5, 1, "#96b46c");
-    y -= b.kind === "ladybug" ? 0 : 2 + flap;
-    if (b.kind === "butterfly") {
-      oval(x - 3, y - 1, 3, 3 + flap, "#926493");
-      oval(x + 3, y - 1, 3, 3 + flap, "#926493");
-      r(x - 5, y - 3, 3, 3, "#eab6cf");
-      r(x + 2, y - 3, 3, 3, "#eab6cf");
-      r(x, y - 2, 1, 5, "#664e57");
-    } else if (b.kind === "bee") {
-      r(x - 2, y - 5 - flap, 3, 3, "#edf5cd");
-      r(x + 1, y - 4 - flap, 3, 3, "#edf5cd");
-      oval(x, y, 5, 3, "#6e5942");
-      r(x - 3, y - 2, 2, 5, "#f1bc56");
-      r(x + 1, y - 2, 2, 5, "#ffcc60");
-    } else {
-      oval(x, y, 5, 4, "#4c5041");
-      oval(x, y - 1, 4, 3, "#dd714d");
-      r(x - 2, y - 1, 1, 1, "#494538");
-      r(x + 2, y - 2, 1, 1, "#494538");
-      r(x, y - 4, 1, 6, "#a34f39");
-      r(x - 2, y - 4, 4, 2, "#494538");
-    }
-  }
   function explorer(x, y, color, bounce, heading, swinging) {
     oval(x, y + 2, 8, 2, "#92ae6b");
     y -= bounce;
@@ -220,7 +248,6 @@ export function paint(ctx, world, id, camera, time, walking, swings = {}) {
     oval(x + 9, y - 14, 3, 3, "#849981");
     oval(x + 9, y - 14, 2, 2, "#e5ecc5");
   }
-  const targets = [];
   for (const b of world.bugs) {
     const [x, y, scale] = project(b.x, b.y);
     if (scale > 3 || x < -8 || x > w + 8 || y < 0 || y > h + 8) continue;
@@ -230,15 +257,28 @@ export function paint(ctx, world, id, camera, time, walking, swings = {}) {
       x,
       y: y - (b.kind === "ladybug" ? 1 : 3) * size,
       size,
-      bug: b,
+      point: b,
     });
-    objects.push({ y, draw: () => atScale(x, y, size, () => bug(x, y, b)) });
+    objects.push({ y, draw: () => atScale(x, y, size, () => drawBug(ctx, x, y, b.kind, time + b.x)) });
   }
   for (const [key, p] of Object.entries(world.players)) {
     const local = key === id;
     const [x, y, scale] = local ? [w / 2, h * 0.55, 1] : project(p.x, p.y);
     if (scale > 3) continue;
     const swing = swings[key];
+    if (world.players[key].castUntil) {
+      const pond = nearestPond(p, world.seed);
+      const [fx, fy] = project(pond.x, pond.y + 4);
+      objects.push({ y: Infinity, draw: () => {
+        ctx.strokeStyle = "#fff3c8";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x + 8 * scale, y - 13 * scale);
+        ctx.lineTo(fx, fy);
+        ctx.stroke();
+        oval(fx, fy + Math.sin(time * 8), 2, 2, "#d97856");
+      } });
+    }
     const progress = swing ? (time - swing.start) / 0.37 : 1;
     const active = progress >= 0 && progress < 1;
     objects.push({
@@ -290,4 +330,42 @@ export function paint(ctx, world, id, camera, time, walking, swings = {}) {
   objects.sort((a, b) => a.y - b.y);
   for (const obj of objects) obj.draw();
   return targets;
+}
+
+export function drawBug(ctx, x, y, kind, time) {
+  const { r, oval } = brushes(ctx);
+  const flap = Number(Math.sin(time * 6) > 0);
+  if (kind === "butterfly") {
+    for (const dx of [-3, 3]) {
+      oval(x + dx, y - 2, 3, 3 + flap, "#926493");
+      r(x + dx - 1, y - 4, 2, 3, "#eab6cf");
+    }
+    r(x, y - 3, 1, 5, "#664e57");
+  } else if (kind === "bee") {
+    r(x - 2, y - 5 - flap, 3, 3, "#edf5cd");
+    r(x + 1, y - 4 - flap, 3, 3, "#edf5cd");
+    oval(x, y, 5, 3, "#6e5942");
+    r(x - 3, y - 2, 2, 5, "#f1bc56");
+    r(x + 1, y - 2, 2, 5, "#ffcc60");
+  } else if (kind === "dragonfly") {
+    for (const dx of [-4, 4]) for (const dy of [-2, 1])
+      oval(x + dx, y + dy - flap, 3, 1, "#d6eff1");
+    r(x - 1, y - 3, 2, 9, "#377b80");
+    r(x - 2, y - 4, 4, 2, "#589e9c");
+  } else if (kind === "caterpillar") {
+    for (let i = 0; i < 4; i++)
+      oval(x - 5 + 3 * i, y - ((i + flap) % 2), 2, 2, i % 2 ? "#639749" : "#87b55a");
+    r(x + 4, y - 2, 1, 1, "#354d3c");
+  } else if (kind === "firefly") {
+    oval(x, y, 4, 2, "#5b5445");
+    oval(x - 3, y, 2 + flap, 2, flap ? "#ffed81" : "#d8bd65");
+    r(x, y - 3 - flap, 3, 2, "#dfeecb");
+  } else {
+    oval(x, y, 5, 4, "#4c5041");
+    oval(x, y - 1, 4, 3, "#dd714d");
+    r(x - 2, y - 1, 1, 1, "#494538");
+    r(x + 2, y - 2, 1, 1, "#494538");
+    r(x, y - 4, 1, 6, "#a34f39");
+    r(x - 2, y - 4, 4, 2, "#494538");
+  }
 }
