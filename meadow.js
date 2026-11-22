@@ -1,6 +1,6 @@
 const PLAYER_SPEED = 66;
 const TURN_SPEED = 1.85;
-export const NET_REACH = 34;
+export const NET_REACH = 56;
 export const FISH_ACTION = -1;
 export const POND_SPACING = 300;
 export const BUG_KINDS = ["ladybug", "butterfly", "bee", "dragonfly", "caterpillar", "firefly"];
