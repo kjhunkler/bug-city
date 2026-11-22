@@ -4,7 +4,7 @@ import { once } from "node:events";
 import { createServer } from "node:http";
 import test from "node:test";
 import { createGardenRelay } from "./garden-relay.js";
-import { stepWorld } from "./meadow.js";
+import { stepWorld, FISH_ACTION, fishingSpot, nearestPond } from "./meadow.js";
 
 const tokens = new Map();
 function identity(char) {
@@ -132,6 +132,27 @@ test("players join one garden and the oldest guest continues its simulation", { 
   const continued = await third.next((frame) => frame.host === GUEST &&
     frame.world.players[GUEST].angle !== guestPlayerBefore.angle);
   assert.ok(continued.world.caught >= world.caught);
+});
+
+test("a guest's dock tap reaches the host and lands one fish", { timeout: 5000 }, async (t) => {
+  const relay = await fixture(t);
+  const host = await relay.join(HOST);
+  await host.next();
+  await relay.join(GUEST);
+  const { world } = await host.next((frame) => frame.world?.players[GUEST]);
+
+  const bogus = { turn: 0, forward: 0, targetBug: -2, targetSequence: 1 };
+  assert.equal((await relay.post("input", GUEST, bogus)).status, 204);
+  assert.equal((await host.next((frame) => frame.id === GUEST)).input.targetBug, null);
+
+  const cast = { turn: 0, forward: 0, targetBug: FISH_ACTION, targetSequence: 1 };
+  assert.equal((await relay.post("input", GUEST, cast)).status, 204);
+  const { input } = await host.next((frame) => frame.id === GUEST);
+  assert.deepEqual(input, cast);
+
+  Object.assign(world.players[GUEST], fishingSpot(nearestPond(world.players[GUEST], world.seed)));
+  for (let i = 0; i < 40; i++) stepWorld(world, 1 / 20, { [GUEST]: input });
+  assert.equal(world.fish, 1);
 });
 
 test("an idle host expires and can rejoin behind the active guest", { timeout: 5000 }, async (t) => {

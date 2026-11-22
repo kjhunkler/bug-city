@@ -1,4 +1,4 @@
-import { stepWorld } from "./meadow.js";
+import { stepWorld, isAction } from "./meadow.js";
 
 export function connectGarden({ onWorld, onStatus = () => {}, baseUrl = "" }) {
   const token = Array.from(crypto.getRandomValues(new Uint8Array(32)),
@@ -87,7 +87,7 @@ export function connectGarden({ onWorld, onStatus = () => {}, baseUrl = "" }) {
 
   return {
     input({ turn, forward, targetBug, targetSequence }) {
-      const hasTarget = Number.isSafeInteger(targetBug) && targetBug > 0;
+      const hasTarget = isAction(targetBug);
       const selected = hasTarget ? targetBug : controls.targetBug;
       const sequence = hasTarget && Number.isSafeInteger(targetSequence) && targetSequence > 0
         ? targetSequence
