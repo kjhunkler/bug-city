@@ -1,6 +1,8 @@
 # Bug City
 
-[Open the meadow](https://kjhunkler.github.io/bug-city/) and tap a butterfly, bee or ladybug to swing the net and catch it. The jar counts everyone’s finds. Bug City is a cooperative pixel game for ages three to five.
+[Open the meadow](https://kjhunkler.github.io/bug-city/), walk close to a bug and tap it to swing the net. Look for ladybugs, butterflies, bees, dragonflies, caterpillars and fireflies. A caught bug leaves its spot empty for 90 seconds of meadow time, so try another patch. Tap the jar to watch everyone’s finds crawl around.
+
+Ponds are home to frogs, turtles and fish. In the Pages meadow or offline, walk up to a flagged dock and tap it to cast. Stay close until the bobber comes in. Fish are counted separately from bugs.
 
 Push the bottom stick forward to walk. Tilt it sideways to turn your explorer and the camera. On a keyboard use the arrows or WASD. The game fills the viewport and requests native fullscreen on the first touch or movement key; browser and system controls govern whether it can stay fullscreen.
 
