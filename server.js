@@ -5,6 +5,7 @@ import { createGardenRelay } from "./garden-relay.js";
 
 const assets = new Set([
   "index.html",
+  "public/audio/bug-catcher-quest.m4a",
   "style.css",
   "main.js",
   "art.js",
@@ -29,6 +30,7 @@ const mime = {
   ".css": "text/css",
   ".js": "text/javascript",
   ".png": "image/png",
+  ".m4a": "audio/mp4",
   ".webmanifest": "application/manifest+json",
 };
 const garden = createGardenRelay();

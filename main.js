@@ -350,6 +350,33 @@ canvas.onpointerup = (e) => {
     },
   );
 };
+const theme = document.querySelector("#theme");
+const musicButton = document.querySelector("#music");
+let musicEnabled = true, hasPlayedGesture = false;
+try { musicEnabled = localStorage.getItem("bug-city-music") !== "off"; } catch {}
+musicButton.setAttribute("aria-pressed", String(musicEnabled));
+function updateTheme() {
+  if (!musicEnabled || document.hidden) theme.pause();
+  else if (hasPlayedGesture && theme.paused) theme.play().catch(() => {});
+}
+function unlockTheme(event) {
+  if (event.target === musicButton) return;
+  hasPlayedGesture = true;
+  updateTheme();
+}
+document.addEventListener("pointerup", unlockTheme, true);
+document.addEventListener("keydown", unlockTheme, true);
+musicButton.onclick = () => {
+  hasPlayedGesture = true;
+  musicEnabled = !musicEnabled;
+  musicButton.setAttribute("aria-pressed", String(musicEnabled));
+  try { localStorage.setItem("bug-city-music", musicEnabled ? "on" : "off"); } catch {}
+  updateTheme();
+};
+document.addEventListener("visibilitychange", updateTheme);
+window.addEventListener("pagehide", () => theme.pause());
+window.addEventListener("pageshow", updateTheme);
+
 function fullscreen() {
   if (!document.fullscreenElement)
     document.documentElement

@@ -260,6 +260,7 @@ body {
 }
 .titleplate,
 .counter,
+#music,
 #outfit,
 .friends {
   border: 1px solid #e7d9a77a;
@@ -292,13 +293,15 @@ body {
 header {
   gap: 8px;
 }
+#music,
 #outfit,
 .counter {
   pointer-events: auto;
   cursor: pointer;
   min-height: 46px;
 }
-#outfit {
+#music[aria-pressed='false'] { opacity: .7; text-decoration: line-through; }
+#music, #outfit {
   width: 46px;
   font-size: 21px;
 }
