@@ -58,7 +58,8 @@ function loadPatches(world, players) {
       const ix = cx + dx, iy = cy + dy, key = `${ix},${iy}`;
       if (patches.has(key)) continue;
       patches.add(key);
-      for (let i = 0; i < 1; i++) {
+      const residents = ix === 0 && iy === 0 ? 2 : 1;
+      for (let i = 0; i < residents; i++) {
         if ((ix || iy) && hash(ix, iy, world.seed) % 5 > 2) continue;
         const slot = `${key},${i}`;
         if (world.resting[slot]) continue;
