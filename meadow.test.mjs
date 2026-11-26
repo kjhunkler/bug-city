@@ -1,6 +1,6 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
-import { addPlayer, createWorld, movePlayer, removePlayer, stepWorld, FISH_ACTION, REEL_ACTION, nearestPond, fishingSpot } from "./meadow.js";
+import { addPlayer, createWorld, movePlayer, removePlayer, stepWorld, FISH_ACTION, REEL_ACTION, NET_REACH, nearestPond, fishingSpot } from "./meadow.js";
 
 test("meadow movement uses facing, with no world boundary", () => {
   const world = createWorld(42);
@@ -37,9 +37,9 @@ test("walking in range does not retry a tap", () => {
   const world = createWorld(42);
   addPlayer(world, "a");
   const b = addPlayer(world, "b");
-  b.y = -70;
+  b.y = -NET_REACH - 14;
   const first = world.bugs[0];
-  Object.assign(first, { x: 0, y: -70 });
+  Object.assign(first, { x: 0, y: b.y });
   const tap = { a: { targetBug: first.id, forward: 1 } };
   stepWorld(world, 1, tap);
   stepWorld(world, 0);
@@ -68,7 +68,7 @@ test("players share catches and each gets bugs even when far apart", () => {
     assert.ok(world.bugs.some((bug) => Math.hypot(bug.x - player.x, bug.y - player.y) <= 100));
   }
   removePlayer(world, "b");
-  assert.ok(world.bugs.every((bug) => Math.abs(bug.x - a.x) < 200));
+  assert.ok(world.bugs.every((bug) => Math.abs(bug.x - a.x) < 360));
   removePlayer(world, "a");
   assert.deepEqual(world.bugs, []);
   assert.equal(world.caught, 1);
@@ -93,6 +93,7 @@ test("a cleared patch stays empty on a return visit until it recovers", () => {
 
 test("fishing requires a fresh tap near the dock and resolves once outside the bug jar", () => {
   const world = createWorld(42), player = addPlayer(world, "a");
+  player.y = 100;
   const input = { a: { targetBug: FISH_ACTION, targetSequence: 1 } };
   stepWorld(world, 0, input);
   assert.equal(player.castUntil, undefined);

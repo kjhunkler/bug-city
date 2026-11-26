@@ -510,3 +510,9 @@ button:focus-visible {
   outline: 3px solid #cf964b;
   outline-offset: 2px;
 }
+
+#transfer {background:#f1e6cb}
+#transfer canvas {width:min(100%, 75dvh);height:auto;max-height:none;margin:auto;touch-action:none;cursor:grab;outline-offset:2px}
+#transfer canvas:active {cursor:grabbing}
+#transfer p {margin:10px auto 0;max-width:32em}
+@media (max-height:460px){#transfer canvas{width:min(100%,68dvh)}}

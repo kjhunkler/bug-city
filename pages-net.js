@@ -2,7 +2,7 @@ import { validCoat } from "./meadow.js";
 import { addPlayer, createWorld, removePlayer, stepWorld } from "./meadow.js";
 import { validHabitat, isAction } from "./meadow.js";
 
-const PROTOCOL = "bug-city-whisperwood-v2";
+const PROTOCOL = "bug-city-whisperwood-v3";
 const FRAME_MS = 50;
 const HANDSHAKE_MS = 7000;
 const SILENCE_MS = 8000;

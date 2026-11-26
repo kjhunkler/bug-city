@@ -1,4 +1,4 @@
-const CACHE = "bug-city-shell-forest-4";
+const CACHE = "bug-city-shell-forest-5";
 const SHELL = [
   "./",
   "./index.html",
@@ -9,6 +9,7 @@ const SHELL = [
   "./wonders.js",
   "./field-art.js",
   "./encounter.js",
+  "./catch-jar.js",
   "./pond.js",
   "./meadow.js",
   "./garden-net.js",

@@ -12,6 +12,7 @@ const assets = new Set([
   "wonders.js",
   "field-art.js",
   "encounter.js",
+  "catch-jar.js",
   "pond.js",
   "meadow.js",
   "garden-net.js",

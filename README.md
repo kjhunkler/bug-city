@@ -4,6 +4,8 @@
 
 Watch for rustling ferns and wobbling stones. Tap one nearby to inspect the forest floor, then tap the insect to catch it. Two occupied hiding places near the starting clearing introduce the hunt. Farther along the trail, search Fern Hollow, Amberwood, and Bluebell Reach for six species and three landmark stamps.
 
+Giant trunks rise overhead among low woodland plants. Watch for insects crawling or flying briefly out of cover. Tap a visible insect within about ten steps to swing your net. Swipe down to drop it into your open jar, then watch the lid settle. If a resident climbs to the rim while you wait, swipe down on that bug to keep it inside. The down-arrow key also works.
+
 At a flagged pond, tap the water to cast. Watch the shadows and pull when the float tugs. Minnows, sunfish, trout, and moon carp have different size ranges. Some catches are keepsakes. Fish return to the pond, and your largest catch of each species goes into your record.
 
 Open your jar to see your insects, fishing records, and trail stamps. The journal and coat color are saved in this browser. Players explore one shared habitat, and only the explorer who makes a catch adds it to their jar.

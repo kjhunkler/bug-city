@@ -82,12 +82,26 @@ export function insect(g, x, y, kind, t, scale = 1) {
   }
   g.restore();
 }
+export function residentPose(i, time) {
+  const phase = time * 0.32 + i * 2.4;
+  return {
+    x: 100 + ((i * 37) % 100) + Math.sin(phase) * 7,
+    y: 74 + ((i * 23) % 103) + Math.cos(phase * 0.8) * 6,
+    angle: Math.sin(phase) * 1.4,
+  };
+}
 export function jarScene(g, kinds, time) {
   const w = g.canvas.width,
     h = g.canvas.height;
   g.clearRect(0, 0, w, h);
   g.save();
   g.scale(w / 300, h / 230);
+  drawBottle(g, kinds, time);
+  g.restore();
+}
+
+// Bottle artwork uses a 300 × 230 coordinate system in both jar views.
+export function drawBottle(g, kinds, time, lid = 1) {
   ellipse(g, 150, 213, 83, 6, "#52402933");
   const bottle = new Path2D(
     "M95 34 L205 34 Q203 45 217 54 Q229 64 228 84 L226 191 Q226 210 210 213 Q149 221 90 213 Q74 210 74 191 L72 84 Q71 62 84 53 Q97 44 95 34 Z",
@@ -130,12 +144,11 @@ export function jarScene(g, kinds, time) {
       i % 2 ? -0.8 : 0.5,
     );
   kinds.forEach((k, i) => {
-    const t = time * 0.32 + i * 2.4,
-      x = 100 + ((i * 37) % 100) + Math.sin(t) * 7,
-      y = 74 + ((i * 23) % 103) + Math.cos(t * 0.8) * 6;
+    if (!k) return;
+    const pose = residentPose(i, time);
     g.save();
-    g.translate(x, y);
-    g.rotate(Math.sin(t) * 1.4);
+    g.translate(pose.x, pose.y);
+    g.rotate(pose.angle);
     insect(g, 0, 0, k, time + i, 0.92);
     g.restore();
   });
@@ -146,6 +159,13 @@ export function jarScene(g, kinds, time) {
   g.strokeStyle = "#68887d";
   g.lineWidth = 2.5;
   g.stroke(bottle);
+  ellipse(g, 150, 35, 55, 8, "#7b9a8f");
+  ellipse(g, 150, 35, 50, 5, "#496750");
+  ellipse(g, 150, 37, 47, 2, "#c4ddc4");
+  g.save();
+  g.translate(150 + (1 - lid) * 93, 30 - (1 - lid) * 38);
+  g.rotate((1 - lid) * 0.85);
+  g.translate(-150, -30);
   g.fillStyle = "#80785e";
   g.fillRect(90, 23, 120, 15);
   for (let i = 0; i < 29; i++)

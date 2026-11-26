@@ -1,6 +1,8 @@
 const PLAYER_SPEED = 66;
 const TURN_SPEED = 1.85;
-export const NET_REACH = 56;
+// At walking speed, one animated footfall covers about twenty world units.
+export const NET_REACH = 10 * 20;
+const PATCH_OFFSETS = [0, -1, 1, -2, 2, -3, 3];
 export const FISH_ACTION = -1;
 export const REEL_ACTION = -2;
 export const POND_SPACING = 760;
@@ -86,8 +88,8 @@ function loadPatches(world, players) {
   for (const player of players) {
     const cx = Math.round(player.x / PATCH_SIZE),
       cy = Math.round(player.y / PATCH_SIZE);
-    for (const dy of [0, -1, 1])
-      for (const dx of [0, -1, 1]) {
+    for (const dy of PATCH_OFFSETS)
+      for (const dx of PATCH_OFFSETS) {
         const ix = cx + dx,
           iy = cy + dy,
           key = `${ix},${iy}`;
@@ -267,6 +269,7 @@ function act(world, player, input) {
   world.caught++;
   world.collection[bug.kind]++;
   world.resting[bug.slot] = world.time + RECOVERY;
+  player.swingAt = world.time;
   player.swingX = bug.x;
   player.swingY = bug.y;
   player.swing = (player.swing ?? 0) + 1;

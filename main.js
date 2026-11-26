@@ -1,3 +1,4 @@
+import { openTransfer, drawTransfer } from "./catch-jar.js";
 import { nearbyWonder } from "./wonders.js";
 import { openPond, drawPond } from "./pond.js";
 import { openHunt, drawEncounter } from "./encounter.js";
@@ -196,6 +197,7 @@ function notify(text) {
   flashUntil = performance.now() + 2200;
 }
 function claim(target) {
+  if (pendingFind || journal.inNet) return;
   axis.targetBug = target.id;
   axis.targetSequence++;
   pendingFind = {
@@ -207,6 +209,38 @@ function claim(target) {
   connection.input(axis);
 }
 
+function transferCatch(kind, resume = false) {
+  keys.clear();
+  release();
+  for (const modal of document.querySelectorAll("dialog[open]")) modal.close();
+  const residents = [];
+  // Keep several species in view even when a large jar has many of one kind.
+  for (let row = 0; residents.length < 24; row++) {
+    const before = residents.length;
+    for (const species of BUG_KINDS) {
+      if ((journal.bugs[species] || 0) > row && residents.length < 24)
+        residents.push(species);
+    }
+    if (residents.length === before) break;
+  }
+  openTransfer({
+    kind,
+    residents,
+    coat: axis.coat,
+    resume,
+    stow() {
+      journal.bugs[kind] = (journal.bugs[kind] || 0) + 1;
+      delete journal.inNet;
+      saveJournal();
+    },
+    escape(species) {
+      if (journal.bugs[species] > 1) journal.bugs[species]--;
+      else delete journal.bugs[species];
+      saveJournal();
+    },
+  });
+}
+if (BUG_KINDS.includes(journal.inNet)) transferCatch(journal.inNet, true);
 document.querySelector(".counter").onclick = () => {
   keys.clear();
   release();
@@ -285,6 +319,7 @@ canvas.onpointerup = (e) => {
   let nearest = null,
     best = Infinity;
   for (const target of targets) {
+    if (!inReach(world.players[myId], target.point)) continue;
     const distance = Math.hypot(px - target.x, py - target.y);
     if (distance <= Math.max(touchRadius, 7 * target.size) && distance < best) {
       best = distance;
@@ -292,15 +327,11 @@ canvas.onpointerup = (e) => {
     }
   }
   if (!nearest) return;
-  if (!inReach(world.players[myId], nearest.point)) {
-    flash.textContent = "Walk closer!";
-    flashUntil = performance.now() + 900;
-    return;
-  }
   if (nearest.id !== FISH_ACTION) {
     keys.clear();
     release();
-    openHunt(nearest, claim);
+    if (nearest.exposed) claim(nearest);
+    else openHunt(nearest, claim);
     return;
   }
   keys.clear();
@@ -430,7 +461,9 @@ function frame(now) {
             {
               ...(id === myId ? camera : remote[id]),
               coat: id === myId ? axis.coat : p.coat,
-              castUntil: p.castUntil,
+              swingAt: p.swingAt,
+              swingX: p.swingX,
+              swingY: p.swingY,
             },
           ]),
         ),
@@ -442,31 +475,51 @@ function frame(now) {
     );
   }
   const guide = document.querySelector("#guide");
-  const dockNear = targets.some(
-    (t) => t.id === FISH_ACTION && inReach(player, t.point),
-  );
-  const denNear = targets.some((t) => t.id > 0 && inReach(player, t.point));
-  const tip = dockNear
-    ? "Tap the pond to fish"
-    : denNear
-      ? "Watch for a wiggle · Tap to peek"
-      : "Drag below to walk and turn";
+  let closest = null,
+    bestRange = Infinity;
+  for (const target of targets) {
+    if (
+      !target.id ||
+      target.x < 0 ||
+      target.x > canvas.width ||
+      target.y < 0 ||
+      target.y > canvas.height ||
+      !inReach(player, target.point)
+    )
+      continue;
+    const range = Math.hypot(
+      target.point.x - player.x,
+      target.point.y - player.y,
+    );
+    if (range < bestRange) {
+      closest = target;
+      bestRange = range;
+    }
+  }
+  const tip =
+    closest?.id === FISH_ACTION
+      ? "Tap the pond to fish"
+      : closest?.exposed
+        ? "Tap the bug to swing your net"
+        : closest
+          ? "Watch for a wiggle · Tap to peek"
+          : "Drag below to walk and turn";
   if (guide.textContent !== tip) guide.textContent = tip;
   if (pendingFind) {
     const find = player?.find;
     if (pendingFind.seed !== world.seed || pendingFind.owner !== myId)
       pendingFind = null;
     else if (find?.id === pendingFind.id && find.sequence === pendingFind.seq) {
-      const fresh = !journal.bugs[find.kind];
-      journal.bugs[find.kind] = (journal.bugs[find.kind] || 0) + 1;
+      journal.inNet = find.kind;
       saveJournal();
-      notify((fresh ? "First " : "Caught a ") + find.kind + "!");
+      transferCatch(find.kind);
       pendingFind = null;
     } else if (!world.bugs.some((b) => b.id === pendingFind.id)) {
       notify("It slipped away!");
       pendingFind = null;
     }
   }
+  drawTransfer(now);
   drawEncounter(now);
   drawPond(now, world, player);
   if (jar.open) showCollection(now / 1000);

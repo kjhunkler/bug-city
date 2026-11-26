@@ -1,11 +1,11 @@
 # Bug City
 
-Whisperwood is a shared forest adventure for young children. Exploration starts immediately. Children can discover insects, fish and landmarks through movement, an animated hint and a single tap.
+Whisperwood is a shared forest adventure for young children. Exploration starts immediately. Children can discover insects, fish and landmarks through movement, visual hints, taps and a downward swipe.
 
 ## Playing
 
 - Begin a floating movement stick wherever a drag starts in the lower screen. Drag forward to walk, sideways to rotate the world and release to stop.
-- Use visual hints before reading is necessary. Nearby cover wiggles, close-ups reveal what is underneath, and one tap collects a visible insect.
+- Use visual hints before reading is necessary. Nearby cover wiggles, close-ups reveal what is underneath, and a net swipe catches a visible insect. Swipe down to stow it in the open jar or return an escaping resident.
 - Keep jars, fish records, trail stamps and coat preferences on the explorer’s browser.
 - Show approaching fish shadows and a visible float tug. A missed catch can be tried again.
 - Support portrait and landscape, touch and keyboard movement, and fullscreen on a permitted gesture.

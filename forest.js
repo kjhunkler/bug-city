@@ -1,3 +1,4 @@
+import { insect } from "./field-art.js";
 import { landmark, drawWonder, trail as trailOffset } from "./wonders.js";
 import {
   pondAt,
@@ -36,7 +37,7 @@ function shape(g, points, color) {
   g.fill();
 }
 const sprites = new Map();
-function tree(n, zone) {
+function shrub(n, zone) {
   const key = zone * 16 + (n % 16);
   if (sprites.has(key)) return sprites.get(key);
   const pic = document.createElement("canvas");
@@ -223,23 +224,30 @@ export function paint(g, world, id, camera, time, walking) {
   ground.addColorStop(1, pal[1]);
   g.fillStyle = ground;
   g.fillRect(0, horizon, w, h - horizon);
+  // Rows of trunks disappear into the mist; their crowns are above the view.
   for (let layer = 0; layer < 3; layer++) {
-    const stride = (9 + layer * 4) * unit,
-      offset = camera.angle * stride * 34;
+    const columns = 44 - layer * 8,
+      stride = unit * (20 + layer * 12);
+    const offset = ((camera.angle * columns) / (Math.PI * 2)) * stride;
     const start = Math.floor(offset / stride);
     for (let i = start - 1; i < start + w / stride + 2; i++) {
-      const n = noise(((i % 214) + 214) % 214, layer, world.seed),
-        x = i * stride - offset;
-      const base = horizon + (layer * 6 + 1) * unit,
-        ht = (12 + layer * 3 + (n % 22)) * unit;
+      const n = noise(((i % columns) + columns) % columns, layer, world.seed);
+      const x = i * stride - offset + stride * ((n % 29) / 100);
+      const depth = 1700 - layer * 490 + ((n >>> 8) % 160);
+      const base = horizon + ((center - horizon) * focal) / (focal + depth);
+      const width = stride * (0.13 + (n % 9) / 100);
+      const lean = (((n >>> 9) % 7) - 3) * unit;
       shape(
         g,
         [
-          [x - stride, base],
-          [x, base - ht],
-          [x + stride, base],
+          [x - width + lean, -2],
+          [x + width + lean, -2],
+          [x + width, base - 5],
+          [x + width * 1.7, base],
+          [x - width * 1.6, base],
+          [x - width, base - 5],
         ],
-        ["#acc4ae", "#91af96", "#779b82"][layer],
+        ["#afc5b3", "#99b7a1", "#88a890"][layer],
       );
     }
   }
@@ -270,6 +278,82 @@ export function paint(g, world, id, camera, time, walking) {
           points.map((p) => [p.x, p.y]),
           "#9e9871",
         );
+    }
+  const cell = 128,
+    tx = Math.floor(camera.x / cell),
+    ty = Math.floor(camera.y / cell);
+  for (let row = ty - 4; row <= ty + 4; row++)
+    for (let col = tx - 4; col <= tx + 4; col++) {
+      const n = noise(col, row, world.seed),
+        y = (row + 0.22) * cell + ((n >>> 12) % 56);
+      let x = (col + 0.18) * cell + (n % 76);
+      const pathX = Math.round((x - trail(y)) / 280) * 280 + trail(y);
+      if (Math.abs(x - pathX) < 43) x = pathX + (x < pathX ? -45 : 45);
+      const pond = nearestPond({ x, y }, world.seed);
+      if (Math.hypot(x - pond.x, y - pond.y) < 69) continue;
+      const p = project(x, y);
+      if (!p) continue;
+      const radius = 12 + ((n >>> 8) % 13);
+      sprite(p, () => {
+        // Let the explorer and near-ground targets show through foreground bark.
+        if (p.depth < 20 && Math.abs(p.x - w / 2) < (radius + 24) * p.k)
+          g.globalAlpha *= 0.24;
+        const top = -p.y / p.k - 8,
+          lean = ((n % 11) - 5) * 0.013 * top;
+        const bark = g.createLinearGradient(-radius, 0, radius, 0);
+        bark.addColorStop(0, "#484b3d");
+        bark.addColorStop(0.3, "#88765a");
+        bark.addColorStop(0.62, "#6b604c");
+        bark.addColorStop(1, "#44493c");
+        shape(
+          g,
+          [
+            [-radius * 2.2, 2],
+            [-radius * 1.32, -8],
+            [-radius, -29],
+            [-radius * 0.79 + lean, top],
+            [radius * 0.8 + lean, top],
+            [radius, -26],
+            [radius * 1.37, -8],
+            [radius * 2.15, 3],
+            [radius * 0.57, 1],
+            [1, 5],
+            [-radius * 0.52, 0],
+          ],
+          bark,
+        );
+        for (let j = 0; j < 11; j++) {
+          const u = (j - 5) / 6,
+            base = u * radius,
+            groove = ((noise(j, n, 17) % 13) - 6) * 0.45;
+          g.beginPath();
+          g.moveTo(base * 1.65, 1);
+          g.bezierCurveTo(base * 0.8, -16, base + groove, -27, base, -48);
+          g.bezierCurveTo(
+            base - groove,
+            top * 0.46,
+            base * 0.8 + lean + groove,
+            top * 0.75,
+            base * 0.8 + lean,
+            top,
+          );
+          g.lineWidth = j % 3 === 0 ? 1.6 : 0.7;
+          g.strokeStyle = j % 3 === 0 ? "#443f3499" : "#af987566";
+          g.stroke();
+        }
+        for (let i = 0; i < 12; i++) {
+          const v = noise(i, n, 9);
+          oval(
+            g,
+            ((v % 100) / 50 - 1) * radius * 1.15,
+            -((v >>> 9) % 11),
+            1.6 + (i % 4),
+            0.9 + (i % 2),
+            i % 2 ? "#78865b" : "#627352",
+            -0.2,
+          );
+        }
+      });
     }
   const cx = Math.floor(camera.x / 36),
     cy = Math.floor(camera.y / 36);
@@ -304,12 +388,12 @@ export function paint(g, world, id, camera, time, walking) {
       if (Math.abs(x - 280 * Math.round((x - trail(y)) / 280) - trail(y)) < 21)
         continue;
       if (n % 5 < 2) {
-        const pic = tree(n, z),
-          s = 0.39 + ((n >>> 12) % 31) / 100;
+        const pic = shrub(n, z),
+          s = 0.17 + ((n >>> 12) % 16) / 100;
         sprite(p, () => {
           if (p.depth < 5 && Math.abs(p.x - w / 2) < 48 * p.k)
             g.globalAlpha = 0.28;
-          g.drawImage(pic, -64 * s, -158 * s, 128 * s, 168 * s);
+          g.drawImage(pic, 0, 0, 128, 126, -64 * s, -70 * s, 128 * s, 72 * s);
         });
       } else if (n % 13 === 0) {
         const type = n % 2 ? "fern" : "stone";
@@ -428,6 +512,23 @@ export function paint(g, world, id, camera, time, walking) {
         g.fillRect(11, -21, 4, 2);
       }
     });
+    const period = 10 + (bug.id % 6),
+      phase = (world.time + bug.id * 2.6) % period;
+    if (phase < 3.5) {
+      const peek = Math.sin((Math.PI * phase) / 3.5),
+        flying = !["ladybug", "caterpillar"].includes(bug.kind);
+      const dx = peek * (bug.id % 2 ? 20 : -20),
+        dy = -10 - peek * (flying ? 17 : 4);
+      sprite(p, () => insect(g, dx, dy, bug.kind, time, 0.45 + peek * 0.45));
+      targets.push({
+        id: bug.id,
+        point: bug,
+        exposed: true,
+        x: p.x + dx * p.k,
+        y: p.y + dy * p.k,
+        size: p.k,
+      });
+    }
     targets.push({
       id: bug.id,
       point: bug,
@@ -442,6 +543,30 @@ export function paint(g, world, id, camera, time, walking) {
       oval(g, 0, 1, 9, 3, "#334e43");
       const bounce = key === id && walking ? Math.sin(time * 10) * 1.6 : 0;
       g.translate(0, bounce);
+      const elapsed = world.time - player.swingAt;
+      if (elapsed >= 0 && elapsed < 0.65) {
+        const side =
+          (player.swingX - player.x) * cos + (player.swingY - player.y) * sin <
+          0
+            ? -1
+            : 1;
+        const angle = -2.5 + 2.96 * (1 - Math.pow(1 - elapsed / 0.65, 2));
+        g.save();
+        g.translate(side * 5, -9);
+        g.scale(side, 1);
+        g.rotate(angle);
+        g.strokeStyle = "#987650";
+        g.lineWidth = 1.8;
+        g.beginPath();
+        g.moveTo(0, 0);
+        g.lineTo(17, 0);
+        g.stroke();
+        oval(g, 22, 0, 6, 4, "#dcecd688");
+        g.strokeStyle = "#d2ba87";
+        g.lineWidth = 1.1;
+        g.stroke();
+        g.restore();
+      }
       const shirt = player.coat || "#dd7956";
       for (const dx of [-4, 3]) oval(g, dx, 0, 2.6, 3, "#493f36");
       oval(g, 0, -8, 7, 8, shirt);
