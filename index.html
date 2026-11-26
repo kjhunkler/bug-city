@@ -13,40 +13,80 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <main aria-label="Bug City multiplayer meadow">
+    <main aria-label="Bug City multiplayer forest">
       <canvas
         id="meadow"
-        aria-label="Bug-catching meadow. Push the stick forward to walk and sideways to turn. Tap a rustling fern or stone to look inside. Arrow keys also work."
+        aria-label="Forest trail. Drag anywhere in the lower screen to walk and turn. Tap a rustling fern or stone to look inside. Arrow keys also work."
       ></canvas>
       <header>
         <div class="titleplate">
           <span class="rivets" aria-hidden="true"></span>
-          <h1>Bug City</h1><small id="place">Fern Hollow</small>
+          <h1>Bug City</h1>
+          <small id="place">Fern Hollow</small>
         </div>
         <button id="outfit" aria-label="Choose coat color">🧥</button>
-        <button class="counter" type="button" aria-label="Open the personal bug jar" aria-haspopup="dialog">
+        <button
+          class="counter"
+          type="button"
+          aria-label="Open the personal bug jar"
+          aria-haspopup="dialog"
+        >
           <canvas id="jar" width="18" height="20" aria-hidden="true"></canvas
           ><strong id="count">0</strong>
         </button>
       </header>
       <dialog id="collection" aria-labelledby="jar-title">
         <h2 id="jar-title">My specimen jar</h2>
-        <canvas id="glass" width="600" height="460" aria-label="Bugs crawling in the jar"></canvas>
-        <p id="jar-label"></p><p id="water-record"></p>
+        <canvas
+          id="glass"
+          width="600"
+          height="460"
+          aria-label="Bugs crawling in the jar"
+        ></canvas>
+        <p id="jar-label"></p>
+        <div id="species" aria-label="Insect field guide"></div>
+        <p id="water-record"></p>
+        <p id="trail-record"></p>
         <div class="jar-controls">
           <button id="prev" aria-label="Previous bugs">&larr;</button>
           <button id="close-jar" autofocus>Back to forest</button>
           <button id="next" aria-label="Next bugs">&rarr;</button>
         </div>
       </dialog>
-      <dialog id="encounter" class="field-scene"><button class="scene-close" aria-label="Back to forest">×</button><h2></h2><canvas width="400" height="240" aria-label="Forest floor close-up"></canvas><p></p><button class="scene-action"></button></dialog>
-      <dialog id="pond" class="field-scene"><button class="scene-close" aria-label="Leave pond">×</button><h2>Stillwater Pond</h2><canvas width="400" height="240" aria-label="Pond with swimming fish shadows and a fishing float"></canvas><p aria-live="polite"></p><button class="scene-action">Cast a line</button></dialog>
-      <dialog id="wardrobe"><h2>My trail coat</h2><div id="swatches"></div><button id="done-coat">Done</button></dialog>
-      <p id="guide">Drag below to walk and turn · Tap to explore</p><div id="catch" role="status"></div>
+      <dialog id="encounter" class="field-scene">
+        <button class="scene-close" aria-label="Back to forest">×</button>
+        <h2></h2>
+        <canvas
+          width="400"
+          height="240"
+          aria-label="Forest floor close-up"
+        ></canvas>
+        <p></p>
+        <button class="scene-action"></button>
+      </dialog>
+      <dialog id="pond" class="field-scene">
+        <button class="scene-close" aria-label="Leave pond">×</button>
+        <h2>Stillwater Pond</h2>
+        <canvas
+          width="400"
+          height="240"
+          aria-label="Pond with swimming fish shadows and a fishing float"
+        ></canvas>
+        <p aria-live="polite"></p>
+        <button class="scene-action">Cast a line</button>
+      </dialog>
+      <dialog id="wardrobe">
+        <h2>My trail coat</h2>
+        <div id="swatches"></div>
+        <button id="done-coat">Done</button>
+      </dialog>
+      <p id="guide">Drag below to walk and turn · Tap to explore</p>
+      <div id="catch" role="status"></div>
       <div class="console">
         <div class="soundholes" aria-hidden="true"></div>
         <div
-          id="stick" hidden
+          id="stick"
+          hidden
           role="group"
           aria-hidden="true"
           aria-label="Movement stick. Up to walk, left and right to turn."
@@ -54,7 +94,7 @@
           <i class="arrow up"></i><i class="arrow left"></i
           ><i class="arrow right"></i><span id="knob"></span>
         </div>
-        <div class="friends" aria-label="Players in the meadow">
+        <div class="friends" aria-label="Explorers in the forest">
           <span id="light"></span><span id="players">1</span
           ><span class="person" aria-hidden="true"></span>
         </div>

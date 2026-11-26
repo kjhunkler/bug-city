@@ -1,14 +1,16 @@
-# Bug City
+# Bug City · Whisperwood
 
-[Open the meadow](https://kjhunkler.github.io/bug-city/), walk close to a bug and tap it to swing the net. Look for ladybugs, butterflies, bees, dragonflies, caterpillars and fireflies. A caught bug leaves its spot empty for 90 seconds of meadow time, so try another patch. Tap the jar to watch everyone’s finds crawl around.
+[Enter the forest](https://kjhunkler.github.io/bug-city/). Drag anywhere in the lower part of the screen to walk forward, back up, or turn. Arrow keys and WASD work too. Open the coat button to choose a color other explorers can see.
 
-Ponds are home to frogs, turtles and fish. Walk up to a flagged dock and tap it to cast. Stay close until the bobber comes in. Fish are counted separately from bugs.
+Watch for rustling ferns and wobbling stones. Tap one nearby to inspect the forest floor, then tap the insect to catch it. Two occupied hiding places near the starting clearing introduce the hunt. Farther along the trail, search Fern Hollow, Amberwood, and Bluebell Reach for six species and three landmark stamps.
 
-Push the bottom stick forward to walk. Tilt it sideways to turn your explorer and the camera. On a keyboard use the arrows or WASD. The game fills the viewport and requests native fullscreen on the first touch or movement key; browser and system controls govern whether it can stay fullscreen.
+At a flagged pond, tap the water to cast. Watch the shadows and pull when the float tugs. Minnows, sunfish, trout, and moon carp have different size ranges. Some catches are keepsakes. Fish return to the pond, and your largest catch of each species goes into your record.
+
+Open your jar to see your insects, fishing records, and trail stamps. The journal and coat color are saved in this browser. Players explore one shared habitat, and only the explorer who makes a catch adds it to their jar.
 
 ## Multiplayer
 
-The first browser in the meadow runs the simulation. Later explorers join automatically. The host resolves catches once and shares the world seed, positions and jar count. A remaining explorer can resume from the latest shared snapshot when the host leaves. The meadow is playable alone while connecting.
+One browser runs the forest simulation. Other explorers join automatically. The host resolves catches and fishing timing. A remaining explorer can take over from the last shared snapshot when the host leaves.
 
 The static Pages build uses PeerJS Cloud for anonymous discovery and WebRTC between browsers. Browsers that cannot establish a direct or relayed connection can keep playing locally. The Node server supports automatic play over ordinary HTTP on a local network. Participants open the same URL. Sessions use generated identifiers, and gameplay has no names, messages, accounts or invitation screens.
 

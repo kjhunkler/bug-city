@@ -2,7 +2,7 @@
   "id": ".",
   "name": "Bug City",
   "short_name": "Bug City",
-  "description": "A pocket meadow for catching bugs together.",
+  "description": "Explore Whisperwood together, find hidden insects, and fish its quiet ponds.",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",

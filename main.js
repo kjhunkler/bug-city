@@ -1,8 +1,17 @@
+import { nearbyWonder } from "./wonders.js";
 import { openPond, drawPond } from "./pond.js";
 import { openHunt, drawEncounter } from "./encounter.js";
-import { jarScene } from "./field-art.js";
-import { createWorld, addPlayer, stepWorld, movePlayer, inReach, BUG_KINDS, FISH_ACTION } from "./meadow.js";
-import { drawJar, drawBug } from "./art.js";
+import { insect, jarScene } from "./field-art.js";
+import {
+  createWorld,
+  addPlayer,
+  stepWorld,
+  movePlayer,
+  inReach,
+  BUG_KINDS,
+  FISH_ACTION,
+} from "./meadow.js";
+import { drawJar } from "./art.js";
 import { connectGarden } from "./garden-net.js";
 import { connectPages } from "./pages-net.js";
 
@@ -22,12 +31,8 @@ let camera = { ...world.players[myId] },
   remote = {},
   online = false,
   snapshotTime = 0,
-  priorCount = 0,
-  priorFish = 0,
   flashUntil = 0;
 let targets = [];
-const swings = Object.create(null),
-  seenSwings = new Map();
 const keys = new Set(),
   axis = { turn: 0, forward: 0, targetBug: 0, targetSequence: 0 };
 const angleDelta = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
@@ -38,9 +43,10 @@ function receive(next, id) {
     camera = { ...next.players[id] };
     remote = {};
     axis.targetBug = 0;
-    seenSwings.clear();
-    priorCount = next.caught;
-    priorFish = next.fish;
+    for (const dialog of document.querySelectorAll(
+      "#encounter[open], #pond[open]",
+    ))
+      dialog.close();
   }
   world = next;
   myId = id;
@@ -65,20 +71,44 @@ const connection = (localServer ? connectGarden : connectPages)({
   onStatus: status,
 });
 
-const coats = {"Clay":"#dd7956","Honey":"#e7b948","Fern":"#73ab65","Lake":"#579ac1","Berry":"#ba78a1","Lilac":"#aa95d6"};
+const coats = {
+  Clay: "#dd7956",
+  Honey: "#e7b948",
+  Fern: "#73ab65",
+  Lake: "#579ac1",
+  Berry: "#ba78a1",
+  Lilac: "#aa95d6",
+};
 let coat;
-try { coat=localStorage.getItem("forest-coat"); } catch {}
-axis.coat=Object.values(coats).includes(coat)?coat:coats.Clay;
+try {
+  coat = localStorage.getItem("forest-coat");
+} catch {}
+axis.coat = Object.values(coats).includes(coat) ? coat : coats.Clay;
 connection.input(axis);
-const wardrobe=document.querySelector("#wardrobe");
-for(const [name,value] of Object.entries(coats)){
-  const btn=document.createElement("button");btn.style.background=value;btn.ariaLabel=name;
-  btn.onclick=()=>{axis.coat=value;connection.input(axis);try{localStorage.setItem("forest-coat",value)}catch{} wardrobe.close();};
+const wardrobe = document.querySelector("#wardrobe");
+for (const [name, value] of Object.entries(coats)) {
+  const btn = document.createElement("button");
+  btn.style.background = value;
+  btn.ariaLabel = name;
+  btn.onclick = () => {
+    axis.coat = value;
+    connection.input(axis);
+    try {
+      localStorage.setItem("forest-coat", value);
+    } catch {}
+    wardrobe.close();
+  };
   document.querySelector("#swatches").append(btn);
 }
-document.querySelector("#outfit").onclick=()=>{keys.clear();release();wardrobe.showModal()};
-document.querySelector("#done-coat").onclick=()=>wardrobe.close();
-let originX=0,originY=0,dragged=false;
+document.querySelector("#outfit").onclick = () => {
+  keys.clear();
+  release();
+  wardrobe.showModal();
+};
+document.querySelector("#done-coat").onclick = () => wardrobe.close();
+let originX = 0,
+  originY = 0,
+  dragged = false;
 let pointer = null,
   stickX = 0,
   stickY = 0;
@@ -98,69 +128,155 @@ function recalc() {
     "translate(" + axis.turn * 54 + "%," + -axis.forward * 54 + "%)";
   connection.input(axis);
 }
-canvas.addEventListener("pointerdown", e=>{
-  if(e.button!==0||pointer!==null||e.clientY<canvas.clientHeight*.45)return;
-  originX=e.clientX;originY=e.clientY;dragged=false;pointer=e.pointerId;
+canvas.addEventListener("pointerdown", (e) => {
+  if (
+    e.button !== 0 ||
+    pointer !== null ||
+    e.clientY < canvas.clientHeight * 0.45
+  )
+    return;
+  originX = e.clientX;
+  originY = e.clientY;
+  dragged = false;
+  pointer = e.pointerId;
   canvas.setPointerCapture(pointer);
-  stick.style.left=originX+"px";stick.style.top=originY+"px";stick.hidden=false;
+  stick.style.left = originX + "px";
+  stick.style.top = originY + "px";
+  stick.hidden = false;
 });
-canvas.onpointermove=e=>{
-  if(pointer!==e.pointerId)return;
-  const dx=e.clientX-originX,dy=e.clientY-originY;
-  if(Math.hypot(dx,dy)>8)dragged=true;
-  stickX=dx/45;stickY=dy/45;recalc();
+canvas.onpointermove = (e) => {
+  if (pointer !== e.pointerId) return;
+  const dx = e.clientX - originX,
+    dy = e.clientY - originY;
+  if (Math.hypot(dx, dy) > 8) dragged = true;
+  stickX = dx / 45;
+  stickY = dy / 45;
+  recalc();
 };
 function release() {
-  pointer=null;stick.hidden=true;stickX=stickY=0;recalc();
+  pointer = null;
+  stick.hidden = true;
+  stickX = stickY = 0;
+  recalc();
 }
-canvas.onpointercancel=release;
-canvas.onlostpointercapture=()=>{if(pointer!==null)release()};
+canvas.onpointercancel = release;
+canvas.onlostpointercapture = () => {
+  if (pointer !== null) release();
+};
 const jar = document.querySelector("#collection");
 const glass = document.querySelector("#glass").getContext("2d");
 const label = document.querySelector("#jar-label");
-const prev = document.querySelector("#prev"), next = document.querySelector("#next");
+const prev = document.querySelector("#prev"),
+  next = document.querySelector("#next");
 const perPage = 24;
-let page = 0, pendingFind=null;
-const journalKey="bug-city-field-journal-v1";
-let journal={bugs:{}, fish:[], keepsakes:[]};
-try{const saved=JSON.parse(localStorage.getItem(journalKey));if(saved&&saved.bugs&&Array.isArray(saved.fish)&&Array.isArray(saved.keepsakes))journal=saved;}catch{}
-function saveJournal(){try{localStorage.setItem(journalKey,JSON.stringify(journal))}catch{}}
-const bugTotal=()=>BUG_KINDS.reduce((n,k)=>n+(journal.bugs[k]||0),0);
-function notify(text){flash.textContent=text;flashUntil=performance.now()+2200;}
-function claim(target){axis.targetBug=target.id;axis.targetSequence++;pendingFind={id:target.id,seq:axis.targetSequence,seed:world.seed,owner:myId};connection.input(axis);}
+let page = 0,
+  pendingFind = null;
+const journalKey = "bug-city-field-journal-v1";
+let journal = { bugs: {}, fish: [], keepsakes: [] };
+try {
+  const saved = JSON.parse(localStorage.getItem(journalKey));
+  if (
+    saved &&
+    saved.bugs &&
+    Array.isArray(saved.fish) &&
+    Array.isArray(saved.keepsakes)
+  )
+    journal = saved;
+} catch {}
+journal.stamps = Array.isArray(journal.stamps) ? journal.stamps : [];
+function saveJournal() {
+  try {
+    localStorage.setItem(journalKey, JSON.stringify(journal));
+  } catch {}
+}
+const bugTotal = () =>
+  BUG_KINDS.reduce((n, k) => n + (journal.bugs[k] || 0), 0);
+function notify(text) {
+  flash.textContent = text;
+  flashUntil = performance.now() + 2200;
+}
+function claim(target) {
+  axis.targetBug = target.id;
+  axis.targetSequence++;
+  pendingFind = {
+    id: target.id,
+    seq: axis.targetSequence,
+    seed: world.seed,
+    owner: myId,
+  };
+  connection.input(axis);
+}
 
 document.querySelector(".counter").onclick = () => {
   keys.clear();
   release();
   page = 0;
-  const records=new Map();
-  for(const f of journal.fish)records.set(f.name,Math.max(records.get(f.name)||0,f.cm));
-  const entries=[...records].map(([name,cm])=>name+" · "+cm+" cm");
-  const souvenirs=[...new Set(journal.keepsakes)];
-  document.querySelector("#water-record").textContent=[...entries,...souvenirs].join("  /  ");
+  const species = document.querySelector("#species");
+  species.replaceChildren();
+  for (const kind of BUG_KINDS) {
+    const found = journal.bugs[kind] || 0,
+      tile = document.createElement("span"),
+      pic = document.createElement("canvas");
+    pic.width = 58;
+    pic.height = 42;
+    insect(pic.getContext("2d"), 29, 21, kind, 1, 1.65);
+    pic.style.filter = found ? "none" : "brightness(0) opacity(.25)";
+    tile.title = found ? kind + " · " + found : "Undiscovered " + kind;
+    tile.setAttribute("aria-label", tile.title);
+    tile.append(pic);
+    species.append(tile);
+  }
+  const records = new Map();
+  for (const f of journal.fish)
+    records.set(f.name, Math.max(records.get(f.name) || 0, f.cm));
+  const entries = [...records].map(([name, cm]) => name + " · " + cm + " cm");
+  const souvenirs = [...new Set(journal.keepsakes)];
+  document.querySelector("#water-record").textContent = [
+    ...entries,
+    ...souvenirs,
+  ].join("  /  ");
+  document.querySelector("#trail-record").textContent = journal.stamps.length
+    ? "Trail stamps · " + journal.stamps.join(" / ")
+    : "Follow the woodland trail to collect three landmark stamps.";
   jar.showModal();
 };
 document.querySelector("#close-jar").onclick = () => jar.close();
 prev.onclick = () => page--;
 next.onclick = () => page++;
 function showCollection(time) {
-  const total=bugTotal();
-  page=Math.max(0,Math.min(page,Math.ceil(total/perPage)-1));
-  const start=page*perPage, kinds=[];
-  let offset=0;
-  for(const kind of BUG_KINDS){
-    const stop=offset+(journal.bugs[kind]||0);
-    for(let i=Math.max(offset,start);i<Math.min(stop,start+perPage);i++)kinds.push(kind);
-    offset=stop;
+  const total = bugTotal();
+  page = Math.max(0, Math.min(page, Math.ceil(total / perPage) - 1));
+  const start = page * perPage,
+    kinds = [];
+  let offset = 0;
+  for (const kind of BUG_KINDS) {
+    const stop = offset + (journal.bugs[kind] || 0);
+    for (
+      let i = Math.max(offset, start);
+      i < Math.min(stop, start + perPage);
+      i++
+    )
+      kinds.push(kind);
+    offset = stop;
   }
-  jarScene(glass,kinds,time);
-  label.textContent=total ? total+" bug"+(total===1?"":"s")+" · "+Object.keys(journal.bugs).length+" species" : "Your first discovery is out there.";
-  prev.disabled=page===0;next.disabled=start+perPage>=total;
+  jarScene(glass, kinds, time);
+  label.textContent = total
+    ? total +
+      " bug" +
+      (total === 1 ? "" : "s") +
+      " · " +
+      Object.keys(journal.bugs).length +
+      " species"
+    : "Your first discovery is out there.";
+  prev.disabled = page === 0;
+  next.disabled = start + perPage >= total;
 }
 // Hit-test the last painted sprites so steering and screen rotation use the same projection.
 canvas.onpointerup = (e) => {
-  if(pointer!==null && e.pointerId!==pointer)return;
-  const moved=pointer!==null&&dragged;release();if(moved)return;
+  if (pointer !== null && e.pointerId !== pointer) return;
+  const moved = pointer !== null && dragged;
+  release();
+  if (moved) return;
   if (e.button !== 0) return;
   const box = canvas.getBoundingClientRect();
   const px = ((e.clientX - box.left) * canvas.width) / box.width,
@@ -181,14 +297,27 @@ canvas.onpointerup = (e) => {
     flashUntil = performance.now() + 900;
     return;
   }
-  if(nearest.id!==FISH_ACTION){keys.clear();release();openHunt(nearest,claim);return;}
-  keys.clear();release();openPond(action=>{
-    axis.targetBug=action;axis.targetSequence++;connection.input(axis);return axis.targetSequence;
-  },result=>{
-    if(result.cm)journal.fish.push({name:result.name,cm:result.cm});
-    else journal.keepsakes.push(result.name);
-    saveJournal();
-  });
+  if (nearest.id !== FISH_ACTION) {
+    keys.clear();
+    release();
+    openHunt(nearest, claim);
+    return;
+  }
+  keys.clear();
+  release();
+  openPond(
+    (action) => {
+      axis.targetBug = action;
+      axis.targetSequence++;
+      connection.input(axis);
+      return axis.targetSequence;
+    },
+    (result) => {
+      if (result.cm) journal.fish.push({ name: result.name, cm: result.cm });
+      else journal.keepsakes.push(result.name);
+      saveJournal();
+    },
+  );
 };
 function fullscreen() {
   if (!document.fullscreenElement)
@@ -208,7 +337,7 @@ const accepted = new Set([
   "d",
 ]);
 document.onkeydown = (e) => {
-  if (document.querySelector('dialog[open]')) return;
+  if (document.querySelector("dialog[open]")) return;
   const key = e.key.toLowerCase();
   if (!accepted.has(key)) return;
   e.preventDefault();
@@ -236,12 +365,6 @@ for (const event of [
   document.addEventListener(event, (e) => e.preventDefault(), {
     passive: false,
   });
-document.addEventListener("touchmove", (e) => e.preventDefault(), {
-  passive: false,
-});
-document.addEventListener("wheel", (e) => e.preventDefault(), {
-  passive: false,
-});
 function resize() {
   const w = canvas.clientWidth,
     h = canvas.clientHeight;
@@ -266,10 +389,15 @@ function frame(now) {
   }
   const player = world.players[myId];
   if (player) {
-    movePlayer(camera, dt, axis);
+    movePlayer(camera, dt, axis, world.seed);
     const target = { ...player };
     if (online)
-      movePlayer(target, Math.min(0.1, (now - snapshotTime) / 1000), axis);
+      movePlayer(
+        target,
+        Math.min(0.1, (now - snapshotTime) / 1000),
+        axis,
+        world.seed,
+      );
     const blend = 1 - Math.exp(-12 * dt);
     camera.x += (target.x - camera.x) * blend;
     camera.y += (target.y - camera.y) * blend;
@@ -283,43 +411,64 @@ function frame(now) {
     }
     for (const id of Object.keys(remote))
       if (!world.players[id]) delete remote[id];
-    for (const [key, p] of Object.entries(world.players)) {
-      if (
-        key !== myId &&
-        p.swing &&
-        seenSwings.has(key) &&
-        seenSwings.get(key) !== p.swing
-      )
-        swings[key] = { x: p.swingX, y: p.swingY, start: now / 1000 };
-      seenSwings.set(key, p.swing || 0);
+    const landmark = nearbyWonder(camera, world.seed);
+    if (landmark && !journal.stamps.includes(landmark)) {
+      journal.stamps.push(landmark);
+      saveJournal();
+      notify("Trail stamp · " + landmark);
     }
-    for (const key of seenSwings.keys())
-      if (!world.players[key]) {
-        seenSwings.delete(key);
-        delete swings[key];
-      }
-    const place=document.querySelector('#place');if(place.textContent!==placeName(camera))place.textContent=placeName(camera);
+    const place = document.querySelector("#place");
+    if (place.textContent !== (landmark || placeName(camera)))
+      place.textContent = landmark || placeName(camera);
     targets = paint(
       ctx,
-      { ...world, players: Object.fromEntries(Object.entries(world.players).map(([id, p]) =>
-        [id, { ...(id === myId ? camera : remote[id]), coat: id===myId ? axis.coat : p.coat, castUntil: p.castUntil }])) },
+      {
+        ...world,
+        players: Object.fromEntries(
+          Object.entries(world.players).map(([id, p]) => [
+            id,
+            {
+              ...(id === myId ? camera : remote[id]),
+              coat: id === myId ? axis.coat : p.coat,
+              castUntil: p.castUntil,
+            },
+          ]),
+        ),
+      },
       myId,
       camera,
       now / 1000,
       Math.abs(axis.forward) > 0.1,
-      swings,
     );
   }
-  if(pendingFind){
-    const find=player?.find;
-    if(pendingFind.seed!==world.seed||pendingFind.owner!==myId)pendingFind=null;
-    else if(find?.id===pendingFind.id&&find.sequence===pendingFind.seq){
-      const fresh=!journal.bugs[find.kind];journal.bugs[find.kind]=(journal.bugs[find.kind]||0)+1;
-      saveJournal();notify((fresh?"First ":"Caught a ")+find.kind+"!");pendingFind=null;
-    }else if(!world.bugs.some(b=>b.id===pendingFind.id)){notify("It slipped away!");pendingFind=null;}
+  const guide = document.querySelector("#guide");
+  const dockNear = targets.some(
+    (t) => t.id === FISH_ACTION && inReach(player, t.point),
+  );
+  const denNear = targets.some((t) => t.id > 0 && inReach(player, t.point));
+  const tip = dockNear
+    ? "Tap the pond to fish"
+    : denNear
+      ? "Watch for a wiggle · Tap to peek"
+      : "Drag below to walk and turn";
+  if (guide.textContent !== tip) guide.textContent = tip;
+  if (pendingFind) {
+    const find = player?.find;
+    if (pendingFind.seed !== world.seed || pendingFind.owner !== myId)
+      pendingFind = null;
+    else if (find?.id === pendingFind.id && find.sequence === pendingFind.seq) {
+      const fresh = !journal.bugs[find.kind];
+      journal.bugs[find.kind] = (journal.bugs[find.kind] || 0) + 1;
+      saveJournal();
+      notify((fresh ? "First " : "Caught a ") + find.kind + "!");
+      pendingFind = null;
+    } else if (!world.bugs.some((b) => b.id === pendingFind.id)) {
+      notify("It slipped away!");
+      pendingFind = null;
+    }
   }
   drawEncounter(now);
-  drawPond(now,world,player);
+  drawPond(now, world, player);
   if (jar.open) showCollection(now / 1000);
   if (now > flashUntil && flash.textContent) flash.textContent = "";
   if (count.textContent !== String(bugTotal()))

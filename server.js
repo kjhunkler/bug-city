@@ -9,6 +9,7 @@ const assets = new Set([
   "main.js",
   "art.js",
   "forest.js",
+  "wonders.js",
   "field-art.js",
   "encounter.js",
   "pond.js",

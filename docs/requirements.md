@@ -1,19 +1,19 @@
 # Bug City
 
-Bug City is a cooperative bug-catching game for children aged three to five. Opening the game drops the child straight into a meadow. Tap a bug to swipe the explorer’s net and add it to the shared jar. Players can wander and catch bugs for as long as they like.
+Whisperwood is a shared forest adventure for young children. Exploration starts immediately. Children can discover insects, fish and landmarks through movement, an animated hint and a single tap.
 
 ## Playing
 
-- Use one large stick at the bottom of the screen. Push forward to walk, tilt left or right to turn, and release to stop.
-- Keep the explorer in the middle of the screen. Keep nearby bugs large and look ahead toward the horizon. Rotate and pan the camera through a seeded, procedurally generated meadow.
-- Show recognizable insects, friendly explorers and shared catches through pictures. A child should be able to play before they can read.
-- Fill the viewport and request native fullscreen at the first permitted gesture. Keep game input free of scrolling, pinch zoom, double-tap zoom, text highlighting, selection handles and context menus.
-- Preserve the feel of a handheld pixel game in landscape and portrait.
+- Begin a floating movement stick wherever a drag starts in the lower screen. Drag forward to walk, sideways to rotate the world and release to stop.
+- Use visual hints before reading is necessary. Nearby cover wiggles, close-ups reveal what is underneath, and one tap collects a visible insect.
+- Keep jars, fish records, trail stamps and coat preferences on the explorer’s browser.
+- Show approaching fish shadows and a visible float tug. A missed catch can be tried again.
+- Support portrait and landscape, touch and keyboard movement, and fullscreen on a permitted gesture.
 
 ## Playing together
 
-- Automatically join the active meadow when the game opens. The first player hosts. Subsequent players enter the same game without logging in, creating a room, exchanging invitations or typing a name.
-- Give players anonymous session identities and distinct explorer colors. Children communicate through movement and shared play.
+- Automatically join the active forest when the game opens. The first player hosts. Subsequent players enter the same game without logging in, creating a room, exchanging invitations or typing a name.
+- Give players anonymous session identities and selectable coat colors. Children communicate through movement and shared play.
 - Keep local movement responsive, smooth remote positions and resolve catches once for the whole group.
-- When the host leaves, a remaining player takes over automatically, preserving the meadow seed, the players still present and the catch count.
+- When the host leaves, a remaining player takes over automatically, preserving the forest seed, the players still present and the catch count.
 - Check the entire flow with independent clients, including late arrival, simultaneous catches, host departure and entry after migration.

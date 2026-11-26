@@ -87,14 +87,21 @@ h1 {
   max-height: 96dvh;
   padding: 12px;
   text-align: center;
-  font: bold 15px ui-monospace, monospace;
+  font:
+    bold 15px ui-monospace,
+    monospace;
   background: #fff0c5;
   color: #354d3c;
   border: 4px solid #435c3d;
   border-radius: 14px;
 }
-#collection::backdrop { background: #243a32a8; }
-#jar-title, #jar-label { margin: 6px; }
+#collection::backdrop {
+  background: #243a32a8;
+}
+#jar-title,
+#jar-label {
+  margin: 6px;
+}
 #glass {
   display: block;
   width: 100%;
@@ -105,7 +112,11 @@ h1 {
   border-radius: 9px 9px 25px 25px;
   image-rendering: pixelated;
 }
-.jar-controls { display: flex; gap: 8px; justify-content: center; }
+.jar-controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
 .jar-controls button {
   min-height: 40px;
   padding: 4px 10px;
@@ -244,35 +255,258 @@ h1 {
   pointer-events: none;
 }
 
-body { font-family: system-ui,sans-serif; }
-.titleplate,.counter,#outfit,.friends {border:1px solid #e7d9a77a;background:#193a32e8;color:#ffefcb;border-radius:18px;box-shadow:0 3px 14px #102e3038;outline:0}
-.titleplate {display:grid;gap:0;padding:8px 16px;margin-right:auto}
-.titleplate .rivets {display:none}
-.titleplate h1 {font:bold 23px Georgia,serif;letter-spacing:0;text-shadow:none}
-.titleplate small {color:#d9dfb3;font-size:12px}
-header {gap:8px}
-#outfit,.counter {pointer-events:auto;cursor:pointer;min-height:46px}
-#outfit {width:46px;font-size:21px}
-.console {display:contents}
-#stick {position:fixed;z-index:2;width:80px;height:80px;background:#ecf4d522;border:2px solid #ffffda75;box-shadow:none;pointer-events:none}
-#stick[hidden],.arrow,.soundholes {display:none}
-#knob {background:#e2e6b999;border:1px solid #faf4d4;box-shadow:none}
-.friends {position:absolute;bottom:max(14px,env(safe-area-inset-bottom));right:12px;padding:8px 12px;pointer-events:none}
-#guide {position:absolute;bottom:max(14px,env(safe-area-inset-bottom));left:12px;max-width:75%;margin:0;padding:8px 12px;border-radius:20px;color:#fff4cf;background:#193a32db;pointer-events:none;font-size:12px}
-#wardrobe {background:#fff2cf;color:#344f40;border:none;border-radius:20px;text-align:center}
-#swatches {display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px}
-#swatches button {border:2px solid #594e3d66;width:54px;height:50px;border-radius:14px}
-#done-coat {padding:10px 20px;border-radius:14px}
+body {
+  font-family: system-ui, sans-serif;
+}
+.titleplate,
+.counter,
+#outfit,
+.friends {
+  border: 1px solid #e7d9a77a;
+  background: #193a32e8;
+  color: #ffefcb;
+  border-radius: 18px;
+  box-shadow: 0 3px 14px #102e3038;
+  outline: 0;
+}
+.titleplate {
+  display: grid;
+  gap: 0;
+  padding: 8px 16px;
+  margin-right: auto;
+}
+.titleplate .rivets {
+  display: none;
+}
+.titleplate h1 {
+  font:
+    bold 23px Georgia,
+    serif;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+.titleplate small {
+  color: #d9dfb3;
+  font-size: 12px;
+}
+header {
+  gap: 8px;
+}
+#outfit,
+.counter {
+  pointer-events: auto;
+  cursor: pointer;
+  min-height: 46px;
+}
+#outfit {
+  width: 46px;
+  font-size: 21px;
+}
+.console {
+  display: contents;
+}
+#stick {
+  position: fixed;
+  z-index: 2;
+  width: 80px;
+  height: 80px;
+  background: #ecf4d522;
+  border: 2px solid #ffffda75;
+  box-shadow: none;
+  pointer-events: none;
+}
+#stick[hidden],
+.arrow,
+.soundholes {
+  display: none;
+}
+#knob {
+  background: #e2e6b999;
+  border: 1px solid #faf4d4;
+  box-shadow: none;
+}
+.friends {
+  position: absolute;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  right: 12px;
+  padding: 8px 12px;
+  pointer-events: none;
+}
+#guide {
+  position: absolute;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  left: 12px;
+  max-width: 75%;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 20px;
+  color: #fff4cf;
+  background: #193a32db;
+  pointer-events: none;
+  font-size: 12px;
+}
+#wardrobe {
+  background: #fff2cf;
+  color: #344f40;
+  border: none;
+  border-radius: 20px;
+  text-align: center;
+}
+#swatches {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 16px;
+}
+#swatches button {
+  border: 2px solid #594e3d66;
+  width: 54px;
+  height: 50px;
+  border-radius: 14px;
+}
+#done-coat {
+  padding: 10px 20px;
+  border-radius: 14px;
+}
 
-.field-scene,#collection,#wardrobe {width:min(94vw,580px);max-height:94dvh;overflow:auto;touch-action:pan-y;background:#f2e9d0;color:#344b40;border:1px solid #abac8d;border-radius:22px;padding:18px;text-align:center;font:16px system-ui,sans-serif;box-shadow:0 18px 65px #0f2f3970}
-dialog::backdrop {background:#102e2ad9;backdrop-filter:blur(4px)}
-.field-scene[open] {animation:inspect .35s ease-out}
-@keyframes inspect {from{opacity:.35;transform:scale(.8)}}
-@media(prefers-reduced-motion:reduce){.field-scene[open]{animation:none}}
-.field-scene h2,#collection h2,#wardrobe h2 {font:600 26px Georgia,serif;margin:4px 32px 14px}
-.field-scene canvas {display:block;width:100%;height:auto;max-height:52dvh;object-fit:contain;background:#455e51;border-radius:14px;cursor:pointer}
-.field-scene p {min-height:1.4em;margin:12px 0}
-.field-scene button,#collection button,#done-coat {border:0;border-radius:22px;background:#305847;color:#fff1d3;font:600 15px system-ui;padding:11px 18px;min-height:44px;cursor:pointer}
-.field-scene .scene-close {position:absolute;top:7px;right:8px;font-size:24px;padding:0;width:44px;background:transparent;color:#345341}
-#glass {background:radial-gradient(ellipse,#fff9df,#e7dabe);width:100%;height:min(42dvh,280px);object-fit:contain;border:0;border-radius:14px;image-rendering:auto}
-#collection button:disabled {opacity:.4}
+.field-scene,
+#collection,
+#wardrobe {
+  width: min(94vw, 580px);
+  max-height: 94dvh;
+  overflow: auto;
+  touch-action: pan-y;
+  background: #f2e9d0;
+  color: #344b40;
+  border: 1px solid #abac8d;
+  border-radius: 22px;
+  padding: 18px;
+  text-align: center;
+  font:
+    16px system-ui,
+    sans-serif;
+  box-shadow: 0 18px 65px #0f2f3970;
+}
+dialog::backdrop {
+  background: #102e2ad9;
+  backdrop-filter: blur(4px);
+}
+.field-scene[open] {
+  animation: inspect 0.35s ease-out;
+}
+@keyframes inspect {
+  from {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .field-scene[open] {
+    animation: none;
+  }
+}
+.field-scene h2,
+#collection h2,
+#wardrobe h2 {
+  font:
+    600 26px Georgia,
+    serif;
+  margin: 4px 32px 14px;
+}
+.field-scene canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 52dvh;
+  object-fit: contain;
+  background: #455e51;
+  border-radius: 14px;
+  cursor: pointer;
+}
+.field-scene p {
+  min-height: 1.4em;
+  margin: 12px 0;
+}
+.field-scene button,
+#collection button,
+#done-coat {
+  border: 0;
+  border-radius: 22px;
+  background: #305847;
+  color: #fff1d3;
+  font: 600 15px system-ui;
+  padding: 11px 18px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.field-scene .scene-close {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  font-size: 24px;
+  padding: 0;
+  width: 44px;
+  background: transparent;
+  color: #345341;
+}
+#glass {
+  background: radial-gradient(ellipse, #fff9df, #e7dabe);
+  width: 100%;
+  height: min(42dvh, 280px);
+  object-fit: contain;
+  border: 0;
+  border-radius: 14px;
+  image-rendering: auto;
+}
+#collection button:disabled {
+  opacity: 0.4;
+}
+
+@media (max-height: 470px) {
+  .field-scene,
+  #collection {
+    padding: 8px 14px;
+  }
+  .field-scene canvas {
+    height: 42dvh;
+  }
+  .field-scene h2,
+  #collection h2 {
+    font-size: 20px;
+    margin: 2px 34px 5px;
+  }
+  #glass {
+    height: 31dvh;
+  }
+  .field-scene p,
+  #collection p {
+    margin: 4px;
+  }
+}
+#trail-record,
+#water-record {
+  font-size: 13px;
+  color: #52674e;
+}
+#water-record:empty {
+  display: none;
+}
+#species {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  margin: 4px;
+}
+#species canvas {
+  width: min(9vw, 46px);
+  height: auto;
+}
+dialog,
+dialog * {
+  touch-action: pan-y;
+}
+#swatches button:focus-visible,
+button:focus-visible {
+  outline: 3px solid #cf964b;
+  outline-offset: 2px;
+}
