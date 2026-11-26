@@ -1,3 +1,4 @@
+import { validCoat } from "./meadow.js";
 import { stepWorld, isAction } from "./meadow.js";
 
 export function connectGarden({ onWorld, onStatus = () => {}, baseUrl = "" }) {
@@ -86,15 +87,15 @@ export function connectGarden({ onWorld, onStatus = () => {}, baseUrl = "" }) {
   }, 1000 / 20);
 
   return {
-    input({ turn, forward, targetBug, targetSequence }) {
+    input({ turn, forward, targetBug, targetSequence, coat }) {
       const hasTarget = isAction(targetBug);
       const selected = hasTarget ? targetBug : controls.targetBug;
       const sequence = hasTarget && Number.isSafeInteger(targetSequence) && targetSequence > 0
         ? targetSequence
         : selected === controls.targetBug ? controls.targetSequence : null;
       if (turn !== controls.turn || forward !== controls.forward ||
-          selected !== controls.targetBug || sequence !== controls.targetSequence) {
-        controls = { turn, forward, targetBug: selected, targetSequence: sequence };
+          coat !== controls.coat || selected !== controls.targetBug || sequence !== controls.targetSequence) {
+        controls = { ...(validCoat(coat) ? {coat} : {}), turn, forward, targetBug: selected, targetSequence: sequence };
       }
     },
     close() {

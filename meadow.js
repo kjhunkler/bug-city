@@ -8,6 +8,8 @@ const PATCH_SIZE = 96;
 const RECOVERY = 90;
 const FULL_TURN = 2 * Math.PI;
 
+export const validCoat = value => typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
+
 function axis(value) {
   return Number.isFinite(value) ? Math.max(-1, Math.min(1, value)) : 0;
 }
@@ -177,6 +179,7 @@ export function stepWorld(world, dt, inputs = {}) {
 
   for (const [id, player] of Object.entries(world.players)) {
     const input = Object.hasOwn(inputs, id) ? inputs[id] : undefined;
+    if(validCoat(input?.coat)) player.coat=input.coat;
     act(world, player, input);
     movePlayer(player, dt, input);
     if (player.castUntil) {

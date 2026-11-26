@@ -1,8 +1,9 @@
 import { createWorld, addPlayer, stepWorld, movePlayer, inReach, BUG_KINDS, FISH_ACTION } from "./meadow.js";
-import { drawJar, drawBug, paint } from "./art.js";
+import { drawJar, drawBug } from "./art.js";
 import { connectGarden } from "./garden-net.js";
 import { connectPages } from "./pages-net.js";
 
+import { paint, placeName } from "./forest.js";
 const canvas = document.querySelector("#meadow"),
   ctx = canvas.getContext("2d", { alpha: false });
 const stick = document.querySelector("#stick"),
@@ -61,6 +62,20 @@ const connection = (localServer ? connectGarden : connectPages)({
   onStatus: status,
 });
 
+const coats = {"Clay":"#dd7956","Honey":"#e7b948","Fern":"#73ab65","Lake":"#579ac1","Berry":"#ba78a1","Lilac":"#aa95d6"};
+let coat;
+try { coat=localStorage.getItem("forest-coat"); } catch {}
+axis.coat=Object.values(coats).includes(coat)?coat:coats.Clay;
+connection.input(axis);
+const wardrobe=document.querySelector("#wardrobe");
+for(const [name,value] of Object.entries(coats)){
+  const btn=document.createElement("button");btn.style.background=value;btn.ariaLabel=name;
+  btn.onclick=()=>{axis.coat=value;connection.input(axis);try{localStorage.setItem("forest-coat",value)}catch{} wardrobe.close();};
+  document.querySelector("#swatches").append(btn);
+}
+document.querySelector("#outfit").onclick=()=>{keys.clear();release();wardrobe.showModal()};
+document.querySelector("#done-coat").onclick=()=>wardrobe.close();
+let originX=0,originY=0,dragged=false;
 let pointer = null,
   stickX = 0,
   stickY = 0;
@@ -80,26 +95,23 @@ function recalc() {
     "translate(" + axis.turn * 54 + "%," + -axis.forward * 54 + "%)";
   connection.input(axis);
 }
-function drag(e) {
-  const box = stick.getBoundingClientRect();
-  stickX = (e.clientX - box.left - box.width / 2) / (box.width * 0.38);
-  stickY = (e.clientY - box.top - box.height / 2) / (box.height * 0.38);
-  recalc();
-}
-stick.onpointerdown = (e) => {
-  if (pointer !== null) return;
-  pointer = e.pointerId;
-  stick.setPointerCapture(pointer);
-  drag(e);
-};
-stick.onpointermove = (e) => {
-  if (e.pointerId === pointer) drag(e);
+canvas.addEventListener("pointerdown", e=>{
+  if(e.button!==0||pointer!==null||e.clientY<canvas.clientHeight*.45)return;
+  originX=e.clientX;originY=e.clientY;dragged=false;pointer=e.pointerId;
+  canvas.setPointerCapture(pointer);
+  stick.style.left=originX+"px";stick.style.top=originY+"px";stick.hidden=false;
+});
+canvas.onpointermove=e=>{
+  if(pointer!==e.pointerId)return;
+  const dx=e.clientX-originX,dy=e.clientY-originY;
+  if(Math.hypot(dx,dy)>8)dragged=true;
+  stickX=dx/45;stickY=dy/45;recalc();
 };
 function release() {
-  pointer = null;
-  stickX = stickY = 0;
-  recalc();
+  pointer=null;stick.hidden=true;stickX=stickY=0;recalc();
 }
+canvas.onpointercancel=release;
+canvas.onlostpointercapture=()=>{if(pointer!==null)release()};
 const jar = document.querySelector("#collection");
 const glass = document.querySelector("#glass").getContext("2d");
 const label = document.querySelector("#jar-label");
@@ -135,13 +147,10 @@ function showCollection(time) {
   prev.disabled = page === 0;
   next.disabled = end === world.caught;
 }
-stick.onlostpointercapture = release;
-stick.onpointercancel = release;
-stick.onpointerup = (e) => {
-  if (e.pointerId === pointer) release();
-};
 // Hit-test the last painted sprites so steering and screen rotation use the same projection.
-canvas.onpointerdown = (e) => {
+canvas.onpointerup = (e) => {
+  if(pointer!==null && e.pointerId!==pointer)return;
+  const moved=pointer!==null&&dragged;release();if(moved)return;
   if (e.button !== 0) return;
   const box = canvas.getBoundingClientRect();
   const px = ((e.clientX - box.left) * canvas.width) / box.width,
@@ -189,7 +198,7 @@ const accepted = new Set([
   "d",
 ]);
 document.onkeydown = (e) => {
-  if (jar.open) return;
+  if (document.querySelector('dialog[open]')) return;
   const key = e.key.toLowerCase();
   if (!accepted.has(key)) return;
   e.preventDefault();
@@ -226,7 +235,7 @@ document.addEventListener("wheel", (e) => e.preventDefault(), {
 function resize() {
   const w = canvas.clientWidth,
     h = canvas.clientHeight;
-  const scale = Math.max(1, Math.min(w, h) / 155, Math.max(w, h) / 405);
+  const scale = Math.max(1, Math.min(w, h) / 450, Math.max(w, h) / 880);
   canvas.width = Math.round(w / scale);
   canvas.height = Math.round(h / scale);
 }
@@ -279,10 +288,11 @@ function frame(now) {
         seenSwings.delete(key);
         delete swings[key];
       }
+    const place=document.querySelector('#place');if(place.textContent!==placeName(camera))place.textContent=placeName(camera);
     targets = paint(
       ctx,
       { ...world, players: Object.fromEntries(Object.entries(world.players).map(([id, p]) =>
-        [id, { ...(id === myId ? camera : remote[id]), castUntil: p.castUntil }])) },
+        [id, { ...(id === myId ? camera : remote[id]), coat: id===myId ? axis.coat : p.coat, castUntil: p.castUntil }])) },
       myId,
       camera,
       now / 1000,

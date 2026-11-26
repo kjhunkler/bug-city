@@ -1,7 +1,8 @@
+import { validCoat } from "./meadow.js";
 import { addPlayer, createWorld, removePlayer, stepWorld } from "./meadow.js";
 import { validHabitat, isAction } from "./meadow.js";
 
-const PROTOCOL = "bug-city-meadow-v3";
+const PROTOCOL = "bug-city-whisperwood-v1";
 const FRAME_MS = 50;
 const HANDSHAKE_MS = 7000;
 const SILENCE_MS = 8000;
@@ -40,6 +41,7 @@ function updateInput(previous, next) {
     ? next.targetSequence
     : targetBug === previous.targetBug ? previous.targetSequence : null;
   return {
+    ...(validCoat(next?.coat) ? {coat: next.coat} : {}),
     turn: boundedAxis(next?.turn),
     forward: boundedAxis(next?.forward),
     targetBug,

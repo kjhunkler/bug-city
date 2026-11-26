@@ -243,3 +243,23 @@ h1 {
     -1px -1px #3c503d;
   pointer-events: none;
 }
+
+body { font-family: system-ui,sans-serif; }
+.titleplate,.counter,#outfit,.friends {border:1px solid #e7d9a77a;background:#193a32e8;color:#ffefcb;border-radius:18px;box-shadow:0 3px 14px #102e3038;outline:0}
+.titleplate {display:grid;gap:0;padding:8px 16px;margin-right:auto}
+.titleplate .rivets {display:none}
+.titleplate h1 {font:bold 23px Georgia,serif;letter-spacing:0;text-shadow:none}
+.titleplate small {color:#d9dfb3;font-size:12px}
+header {gap:8px}
+#outfit,.counter {pointer-events:auto;cursor:pointer;min-height:46px}
+#outfit {width:46px;font-size:21px}
+.console {display:contents}
+#stick {position:fixed;z-index:2;width:80px;height:80px;background:#ecf4d522;border:2px solid #ffffda75;box-shadow:none;pointer-events:none}
+#stick[hidden],.arrow,.soundholes {display:none}
+#knob {background:#e2e6b999;border:1px solid #faf4d4;box-shadow:none}
+.friends {position:absolute;bottom:max(14px,env(safe-area-inset-bottom));right:12px;padding:8px 12px;pointer-events:none}
+#guide {position:absolute;bottom:max(14px,env(safe-area-inset-bottom));left:12px;max-width:75%;margin:0;padding:8px 12px;border-radius:20px;color:#fff4cf;background:#193a32db;pointer-events:none;font-size:12px}
+#wardrobe {background:#fff2cf;color:#344f40;border:none;border-radius:20px;text-align:center}
+#swatches {display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px}
+#swatches button {border:2px solid #594e3d66;width:54px;height:50px;border-radius:14px}
+#done-coat {padding:10px 20px;border-radius:14px}

@@ -7,7 +7,7 @@
       content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"
     />
     <meta name="theme-color" content="#29443b" />
-    <title>Bug City · Pocket Meadow</title>
+    <title>Bug City · Whisperwood</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="public/icons/beetle-192.png" />
     <link rel="stylesheet" href="style.css" />
@@ -21,8 +21,9 @@
       <header>
         <div class="titleplate">
           <span class="rivets" aria-hidden="true"></span>
-          <h1>BUG CITY</h1>
+          <h1>Bug City</h1><small id="place">Fern Hollow</small>
         </div>
+        <button id="outfit" aria-label="Choose coat color">🧥</button>
         <button class="counter" type="button" aria-label="Open the shared bug jar" aria-haspopup="dialog">
           <canvas id="jar" width="18" height="20" aria-hidden="true"></canvas
           ><strong id="count">0</strong>
@@ -38,13 +39,14 @@
           <button id="next" aria-label="Next bugs">&rarr;</button>
         </div>
       </dialog>
-      <div id="catch" role="status"></div>
+      <dialog id="wardrobe"><h2>My trail coat</h2><div id="swatches"></div><button id="done-coat">Done</button></dialog>
+      <p id="guide">Drag below to walk and turn · Tap to explore</p><div id="catch" role="status"></div>
       <div class="console">
         <div class="soundholes" aria-hidden="true"></div>
         <div
-          id="stick"
+          id="stick" hidden
           role="group"
-          tabindex="0"
+          aria-hidden="true"
           aria-label="Movement stick. Up to walk, left and right to turn."
         >
           <i class="arrow up"></i><i class="arrow left"></i

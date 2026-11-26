@@ -1,3 +1,4 @@
+import { validCoat } from "./meadow.js";
 import { createHash, randomBytes } from "node:crypto";
 import { addPlayer, createWorld, removePlayer } from "./meadow.js";
 import { validHabitat, isAction } from "./meadow.js";
@@ -155,6 +156,7 @@ export function createGardenRelay({
           ? body.targetSequence
           : targetBug === peer.input.targetBug ? peer.input.targetSequence : null;
         peer.input = {
+          ...(validCoat(body.coat) ? {coat: body.coat} : {}),
           turn: Math.max(-1, Math.min(1, body.turn)),
           forward: Math.max(-1, Math.min(1, body.forward)),
           targetBug,
