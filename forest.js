@@ -1,5 +1,5 @@
 import { pondAt, POND_SPACING, fishingSpot, FISH_ACTION, nearestPond, inWater } from "./meadow.js";
-import { drawBug } from "./art.js";
+
 
 function noise(x,y,seed) {
   let n=Math.imul(x^seed,374761393)+Math.imul(y,668265263);
@@ -101,6 +101,10 @@ export function paint(g,world,id,camera,time,walking){
       const pic=tree(n,z),s=.39+(n>>>12)%31/100;
       sprite(p,()=>{if(p.depth<5&&Math.abs(p.x-w/2)<48*p.k)g.globalAlpha=.28;
         g.drawImage(pic,-64*s,-158*s,128*s,168*s);});
+    }else if(n%13===0){
+      const type=n%2?"fern":"stone";
+      sprite(p,()=>{g.scale(.78,.78);cover(g,type);});
+      targets.push({id:0,x:p.x,y:p.y-6*p.k,size:p.k,point:{x,y,cover:type}});
     }else if(n%5===2)sprite(p,()=>{for(let j=0;j<4;j++){const v=j*3-5;oval(g,v,-3,1.1,4,colors[4],v*.15);}});
     else if(n%11===0)sprite(p,()=>{for(let j=0;j<3;j++){const v=j*4;g.fillStyle="#dfcfab";g.fillRect(v,-4-j,2,5);oval(g,v+1,-5-j,3,2,z===2?"#bda0cc":"#ce845a");}});
   }
@@ -117,7 +121,8 @@ export function paint(g,world,id,camera,time,walking){
     }
   for(const bug of world.bugs){
     const p=project(bug.x,bug.y);if(!p)continue;
-    sprite(p,()=>drawBug(g,0,-2,bug.kind,time));targets.push({id:bug.id,point:bug,x:p.x,y:p.y-3*p.k,size:p.k});
+    sprite(p,()=>{const pulse=(time+bug.id*.9)%3.5;cover(g,bug.cover,pulse<.85?Math.sin(pulse*20)*.095:0);
+      if(pulse<.85){g.fillStyle="#fff1ac";g.fillRect(12,-22,2,4);g.fillRect(11,-21,4,2);}});targets.push({id:bug.id,point:bug,x:p.x,y:p.y-3*p.k,size:p.k});
   }
   for(const [key,player] of Object.entries(world.players)){
     const p=project(player.x,player.y);sprite(p,()=>{

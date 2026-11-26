@@ -2,7 +2,7 @@ const PLAYER_SPEED = 66;
 const TURN_SPEED = 1.85;
 export const NET_REACH = 56;
 export const FISH_ACTION = -1;
-export const POND_SPACING = 300;
+export const POND_SPACING = 760;
 export const BUG_KINDS = ["ladybug", "butterfly", "bee", "dragonfly", "caterpillar", "firefly"];
 const PATCH_SIZE = 96;
 const RECOVERY = 90;
@@ -58,7 +58,8 @@ function loadPatches(world, players) {
       const ix = cx + dx, iy = cy + dy, key = `${ix},${iy}`;
       if (patches.has(key)) continue;
       patches.add(key);
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 1; i++) {
+        if ((ix || iy) && hash(ix, iy, world.seed) % 5 > 2) continue;
         const slot = `${key},${i}`;
         if (world.resting[slot]) continue;
         let bug = existing.get(slot);
@@ -68,7 +69,7 @@ function loadPatches(world, players) {
           const x = ix * PATCH_SIZE + (starter ? (i ? 15 : -9) : n % 81 - 40);
           const y = iy * PATCH_SIZE + (starter ? -21 : (n >>> 8) % 81 - 40);
           if (inWater({ x, y }, nearestPond({ x, y }, world.seed))) continue;
-          bug = { id: world.nextBugId++, slot, x, y, kind: BUG_KINDS[(n >>> 16) % BUG_KINDS.length] };
+          bug = { id: world.nextBugId++, slot, x, y, cover: (n & 1) ? "stone" : "fern", kind: BUG_KINDS[(n >>> 16) % BUG_KINDS.length] };
         }
         bugs.push(bug);
       }
@@ -166,6 +167,7 @@ function act(world, player, input) {
   if (!bug || !inReach(bug, player)) return;
 
   world.bugs.splice(index, 1);
+  player.find = { id: bug.id, sequence, kind: bug.kind };
   world.caught++;
   world.collection[bug.kind]++;
   world.resting[bug.slot] = world.time + RECOVERY;

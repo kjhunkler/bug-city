@@ -1,3 +1,5 @@
+import { openHunt, drawEncounter } from "./encounter.js";
+import { jarScene } from "./field-art.js";
 import { createWorld, addPlayer, stepWorld, movePlayer, inReach, BUG_KINDS, FISH_ACTION } from "./meadow.js";
 import { drawJar, drawBug } from "./art.js";
 import { connectGarden } from "./garden-net.js";
@@ -117,7 +119,15 @@ const glass = document.querySelector("#glass").getContext("2d");
 const label = document.querySelector("#jar-label");
 const prev = document.querySelector("#prev"), next = document.querySelector("#next");
 const perPage = 24;
-let page = 0;
+let page = 0, pendingFind=null;
+const journalKey="bug-city-field-journal-v1";
+let journal={bugs:{}, fish:[], keepsakes:[]};
+try{const saved=JSON.parse(localStorage.getItem(journalKey));if(saved&&saved.bugs&&Array.isArray(saved.fish)&&Array.isArray(saved.keepsakes))journal=saved;}catch{}
+function saveJournal(){try{localStorage.setItem(journalKey,JSON.stringify(journal))}catch{}}
+const bugTotal=()=>BUG_KINDS.reduce((n,k)=>n+(journal.bugs[k]||0),0);
+function notify(text){flash.textContent=text;flashUntil=performance.now()+2200;}
+function claim(target){axis.targetBug=target.id;axis.targetSequence++;pendingFind={id:target.id,seq:axis.targetSequence,seed:world.seed,owner:myId};connection.input(axis);}
+
 document.querySelector(".counter").onclick = () => {
   keys.clear();
   release();
@@ -128,24 +138,18 @@ document.querySelector("#close-jar").onclick = () => jar.close();
 prev.onclick = () => page--;
 next.onclick = () => page++;
 function showCollection(time) {
-  page = Math.max(0, Math.min(page, Math.ceil(world.caught / perPage) - 1));
-  const start = page * perPage, end = Math.min(start + perPage, world.caught);
-  glass.clearRect(0, 0, glass.canvas.width, glass.canvas.height);
-  let offset = 0;
-  for (const kind of BUG_KINDS) {
-    const stop = offset + world.collection[kind];
-    for (let i = Math.max(start, offset); i < Math.min(end, stop); i++) {
-      const t = time * 0.7 + i * 2.4, j = i - start;
-      drawBug(glass, 15 + (j % 6) * 30 + Math.cos(t) * 7,
-        15 + Math.floor(j / 6) * 27 + Math.sin(t * 1.3) * 7, kind, t);
-    }
-    offset = stop;
+  const total=bugTotal();
+  page=Math.max(0,Math.min(page,Math.ceil(total/perPage)-1));
+  const start=page*perPage, kinds=[];
+  let offset=0;
+  for(const kind of BUG_KINDS){
+    const stop=offset+(journal.bugs[kind]||0);
+    for(let i=Math.max(offset,start);i<Math.min(stop,start+perPage);i++)kinds.push(kind);
+    offset=stop;
   }
-  const text = world.caught ? `${start + 1}–${end} of ${world.caught} bugs` : "No bugs yet";
-  const summary = `${text} · ${world.fish} fish caught`;
-  if (label.textContent !== summary) label.textContent = summary;
-  prev.disabled = page === 0;
-  next.disabled = end === world.caught;
+  jarScene(glass,kinds,time);
+  label.textContent=total ? total+" bug"+(total===1?"":"s")+" · "+Object.keys(journal.bugs).length+" species" : "Your first discovery is out there.";
+  prev.disabled=page===0;next.disabled=start+perPage>=total;
 }
 // Hit-test the last painted sprites so steering and screen rotation use the same projection.
 canvas.onpointerup = (e) => {
@@ -171,14 +175,8 @@ canvas.onpointerup = (e) => {
     flashUntil = performance.now() + 900;
     return;
   }
-  if (nearest.id !== FISH_ACTION) swings[myId] = {
-    x: nearest.point.x,
-    y: nearest.point.y,
-    start: performance.now() / 1000,
-  };
-  axis.targetBug = nearest.id;
-  axis.targetSequence++;
-  connection.input(axis);
+  if(nearest.id!==FISH_ACTION){keys.clear();release();openHunt(nearest,claim);return;}
+  axis.targetBug=nearest.id;axis.targetSequence++;connection.input(axis);
 };
 function fullscreen() {
   if (!document.fullscreenElement)
@@ -300,11 +298,15 @@ function frame(now) {
       swings,
     );
   }
-  if (world.caught > priorCount) {
-    flash.textContent = "✦ +" + (world.caught - priorCount) + " ✦";
-    flashUntil = now + 850;
+  if(pendingFind){
+    const find=player?.find;
+    if(pendingFind.seed!==world.seed||pendingFind.owner!==myId)pendingFind=null;
+    else if(find?.id===pendingFind.id&&find.sequence===pendingFind.seq){
+      const fresh=!journal.bugs[find.kind];journal.bugs[find.kind]=(journal.bugs[find.kind]||0)+1;
+      saveJournal();notify((fresh?"First ":"Caught a ")+find.kind+"!");pendingFind=null;
+    }else if(!world.bugs.some(b=>b.id===pendingFind.id)){notify("It slipped away!");pendingFind=null;}
   }
-  priorCount = world.caught;
+  drawEncounter(now);
   if (world.fish > priorFish) {
     flash.textContent = "Caught a fish!";
     flashUntil = now + 1300;
@@ -312,8 +314,8 @@ function frame(now) {
   priorFish = world.fish;
   if (jar.open) showCollection(now / 1000);
   if (now > flashUntil && flash.textContent) flash.textContent = "";
-  if (count.textContent !== String(world.caught))
-    count.textContent = String(world.caught);
+  if (count.textContent !== String(bugTotal()))
+    count.textContent = String(bugTotal());
   const total = String(Object.keys(world.players).length);
   if (friends.textContent !== total) friends.textContent = total;
   requestAnimationFrame(frame);
