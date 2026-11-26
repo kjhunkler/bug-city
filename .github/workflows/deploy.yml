@@ -23,8 +23,8 @@ jobs:
       - run: npm test
       - run: |
           mkdir -p dist/public
-          cp index.html style.css main.js art.js meadow.js garden-net.js pages-net.js sw.js manifest.webmanifest dist/
-          sed -i "s/bug-city-shell-v2/bug-city-shell-$GITHUB_SHA/" dist/sw.js
+          cp index.html style.css main.js art.js forest.js field-art.js encounter.js pond.js wonders.js meadow.js garden-net.js pages-net.js sw.js manifest.webmanifest dist/
+          sed -i "s/^const CACHE = .*/const CACHE = \"bug-city-shell-$GITHUB_SHA\";/" dist/sw.js
           cp -r public/icons dist/public/
           cp -r vendor dist/
       - uses: actions/upload-pages-artifact@v5
