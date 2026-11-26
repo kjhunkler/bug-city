@@ -11,6 +11,7 @@ const assets = new Set([
   "forest.js",
   "field-art.js",
   "encounter.js",
+  "pond.js",
   "meadow.js",
   "garden-net.js",
   "pages-net.js",

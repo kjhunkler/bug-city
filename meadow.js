@@ -2,6 +2,7 @@ const PLAYER_SPEED = 66;
 const TURN_SPEED = 1.85;
 export const NET_REACH = 56;
 export const FISH_ACTION = -1;
+export const REEL_ACTION = -2;
 export const POND_SPACING = 760;
 export const BUG_KINDS = ["ladybug", "butterfly", "bee", "dragonfly", "caterpillar", "firefly"];
 const PATCH_SIZE = 96;
@@ -26,7 +27,7 @@ function hash(x, y, seed) {
 
 export function pondAt(ix, iy, seed) {
   const n = hash(ix, iy, seed);
-  return { x: ix * POND_SPACING + 15 + n % 24, y: iy * POND_SPACING - 92 + (n >>> 8) % 20 };
+  return { x: ix * POND_SPACING + 15 + n % 24, y: iy * POND_SPACING - 220 + (n >>> 8) % 20 };
 }
 
 export function fishingSpot(pond) {
@@ -34,7 +35,7 @@ export function fishingSpot(pond) {
 }
 
 export function nearestPond(point, seed) {
-  return pondAt(Math.round((point.x - 27) / POND_SPACING), Math.round((point.y + 82) / POND_SPACING), seed);
+  return pondAt(Math.round((point.x - 27) / POND_SPACING), Math.round((point.y + 210) / POND_SPACING), seed);
 }
 
 export function inWater(point, pond) {
@@ -140,7 +141,7 @@ export function movePlayer(player, dt, input) {
 }
 
 export function isAction(target) {
-  return target === FISH_ACTION || (Number.isSafeInteger(target) && target > 0);
+  return target === FISH_ACTION || target === REEL_ACTION || (Number.isSafeInteger(target) && target > 0);
 }
 
 function act(world, player, input) {
@@ -160,8 +161,24 @@ function act(world, player, input) {
   player.lastTargetSequence = sequence;
   if (target === FISH_ACTION) {
     const spot = fishingSpot(nearestPond(player, world.seed));
-    if (!player.castUntil && inReach(player, spot)) player.castUntil = world.time + 1.6;
+    if (!inReach(player,spot)) return;
+    const roll=hash(sequence,Math.floor(world.time*13),world.seed);
+    player.castSeq=sequence;player.biteAt=world.time+2.2+(roll%240)/100;
+    player.castUntil=player.biteAt+3;player.catchRoll=roll;
     return;
+  }
+  if(target===REEL_ACTION){
+    player.landing={sequence};
+    if(player.castUntil && world.time>=player.biteAt && world.time<=player.castUntil &&
+        inReach(player,fishingSpot(nearestPond(player,world.seed)))){
+      const roll=player.catchRoll, pick=roll%16;
+      if(pick<2)player.landing.name=pick?"river pearl":"lost brass button";
+      else {
+        const [name,min,range]=pick<8?["Brook minnow",4,9]:pick<12?["Sunfish",10,17]:pick<15?["Speckled trout",18,29]:["Moon carp",32,49];
+        Object.assign(player.landing,{name,cm:min+((roll>>>8)%range)});world.fish++;
+      }
+    }
+    delete player.castUntil;return;
   }
   const index = world.bugs.findIndex((bug) => bug.id === target);
   const bug = world.bugs[index];
@@ -188,7 +205,6 @@ export function stepWorld(world, dt, inputs = {}) {
     if (player.castUntil) {
       if (!inReach(player, fishingSpot(nearestPond(player, world.seed)))) delete player.castUntil;
       else if (world.time + dt >= player.castUntil) {
-        world.fish++;
         delete player.castUntil;
       }
     }

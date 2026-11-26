@@ -141,7 +141,7 @@ test("a guest's dock tap reaches the host and lands one fish", { timeout: 5000 }
   await relay.join(GUEST);
   const { world } = await host.next((frame) => frame.world?.players[GUEST]);
 
-  const bogus = { turn: 0, forward: 0, targetBug: -2, targetSequence: 1 };
+  const bogus = { turn: 0, forward: 0, targetBug: -99, targetSequence: 1 };
   assert.equal((await relay.post("input", GUEST, bogus)).status, 204);
   assert.equal((await host.next((frame) => frame.id === GUEST)).input.targetBug, null);
 
@@ -151,8 +151,16 @@ test("a guest's dock tap reaches the host and lands one fish", { timeout: 5000 }
   assert.deepEqual(input, cast);
 
   Object.assign(world.players[GUEST], fishingSpot(nearestPond(world.players[GUEST], world.seed)));
-  for (let i = 0; i < 40; i++) stepWorld(world, 1 / 20, { [GUEST]: input });
-  assert.equal(world.fish, 1);
+  const guest=world.players[GUEST];
+  stepWorld(world,0,{[GUEST]:input});
+  stepWorld(world,guest.biteAt-world.time+.1);
+  assert.equal(world.fish,0);
+  const reel={...cast,targetBug:-2,targetSequence:2};
+  assert.equal((await relay.post("input",GUEST,reel)).status,204);
+  const event=await host.next(frame=>frame.id===GUEST);
+  stepWorld(world,0,{[GUEST]:event.input});
+  assert.ok(guest.landing.name);
+  assert.equal(world.fish,guest.landing.cm ? 1 : 0);
 });
 
 test("an idle host expires and can rejoin behind the active guest", { timeout: 5000 }, async (t) => {

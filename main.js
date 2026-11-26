@@ -1,3 +1,4 @@
+import { openPond, drawPond } from "./pond.js";
 import { openHunt, drawEncounter } from "./encounter.js";
 import { jarScene } from "./field-art.js";
 import { createWorld, addPlayer, stepWorld, movePlayer, inReach, BUG_KINDS, FISH_ACTION } from "./meadow.js";
@@ -132,6 +133,11 @@ document.querySelector(".counter").onclick = () => {
   keys.clear();
   release();
   page = 0;
+  const records=new Map();
+  for(const f of journal.fish)records.set(f.name,Math.max(records.get(f.name)||0,f.cm));
+  const entries=[...records].map(([name,cm])=>name+" · "+cm+" cm");
+  const souvenirs=[...new Set(journal.keepsakes)];
+  document.querySelector("#water-record").textContent=[...entries,...souvenirs].join("  /  ");
   jar.showModal();
 };
 document.querySelector("#close-jar").onclick = () => jar.close();
@@ -176,7 +182,13 @@ canvas.onpointerup = (e) => {
     return;
   }
   if(nearest.id!==FISH_ACTION){keys.clear();release();openHunt(nearest,claim);return;}
-  axis.targetBug=nearest.id;axis.targetSequence++;connection.input(axis);
+  keys.clear();release();openPond(action=>{
+    axis.targetBug=action;axis.targetSequence++;connection.input(axis);return axis.targetSequence;
+  },result=>{
+    if(result.cm)journal.fish.push({name:result.name,cm:result.cm});
+    else journal.keepsakes.push(result.name);
+    saveJournal();
+  });
 };
 function fullscreen() {
   if (!document.fullscreenElement)
@@ -307,11 +319,7 @@ function frame(now) {
     }else if(!world.bugs.some(b=>b.id===pendingFind.id)){notify("It slipped away!");pendingFind=null;}
   }
   drawEncounter(now);
-  if (world.fish > priorFish) {
-    flash.textContent = "Caught a fish!";
-    flashUntil = now + 1300;
-  }
-  priorFish = world.fish;
+  drawPond(now,world,player);
   if (jar.open) showCollection(now / 1000);
   if (now > flashUntil && flash.textContent) flash.textContent = "";
   if (count.textContent !== String(bugTotal()))

@@ -32,7 +32,7 @@
       <dialog id="collection" aria-labelledby="jar-title">
         <h2 id="jar-title">My specimen jar</h2>
         <canvas id="glass" width="600" height="460" aria-label="Bugs crawling in the jar"></canvas>
-        <p id="jar-label"></p>
+        <p id="jar-label"></p><p id="water-record"></p>
         <div class="jar-controls">
           <button id="prev" aria-label="Previous bugs">&larr;</button>
           <button id="close-jar" autofocus>Back to forest</button>
@@ -40,6 +40,7 @@
         </div>
       </dialog>
       <dialog id="encounter" class="field-scene"><button class="scene-close" aria-label="Back to forest">×</button><h2></h2><canvas width="400" height="240" aria-label="Forest floor close-up"></canvas><p></p><button class="scene-action"></button></dialog>
+      <dialog id="pond" class="field-scene"><button class="scene-close" aria-label="Leave pond">×</button><h2>Stillwater Pond</h2><canvas width="400" height="240" aria-label="Pond with swimming fish shadows and a fishing float"></canvas><p aria-live="polite"></p><button class="scene-action">Cast a line</button></dialog>
       <dialog id="wardrobe"><h2>My trail coat</h2><div id="swatches"></div><button id="done-coat">Done</button></dialog>
       <p id="guide">Drag below to walk and turn · Tap to explore</p><div id="catch" role="status"></div>
       <div class="console">

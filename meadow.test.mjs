@@ -1,6 +1,6 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
-import { addPlayer, createWorld, movePlayer, removePlayer, stepWorld, FISH_ACTION, nearestPond, fishingSpot } from "./meadow.js";
+import { addPlayer, createWorld, movePlayer, removePlayer, stepWorld, FISH_ACTION, REEL_ACTION, nearestPond, fishingSpot } from "./meadow.js";
 
 test("meadow movement uses facing, with no world boundary", () => {
   const world = createWorld(42);
@@ -102,9 +102,12 @@ test("fishing requires a fresh tap near the dock and resolves once outside the b
   input.a.targetSequence++;
   stepWorld(world, 0.1, input);
   assert.ok(player.castUntil);
-  stepWorld(world, 2, input);
-  stepWorld(world, 2, input);
-  assert.equal(world.fish, 1);
+  stepWorld(world, player.biteAt-world.time+0.1, input);
+  assert.equal(world.fish,0);
+  input.a.targetBug=REEL_ACTION;input.a.targetSequence++;
+  stepWorld(world,0,input);stepWorld(world,0,input);
+  assert.ok(player.landing.name);
+  assert.equal(world.fish,player.landing.cm ? 1 : 0);
   assert.equal(world.caught, 0);
 });
 
